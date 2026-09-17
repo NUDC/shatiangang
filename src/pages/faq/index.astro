@@ -5,9 +5,8 @@
  */
 import Base from '@/layouts/Base.astro';
 import Breadcrumbs from '@/components/Breadcrumbs.astro';
-import SourceList from '@/components/SourceList.astro';
 import Icon from '@/components/Icon.astro';
-import { getFaqs, fmtDate } from '@/lib/content';
+import { getFaqs } from '@/lib/content';
 import * as S from '@/lib/schema';
 import { href } from '@/lib/url';
 
@@ -57,11 +56,11 @@ const jsonLd = S.graph([
 
   <section class="wrap section">
     <header class="section-head">
-      <p class="section-head__kicker">答案引擎优化 · AEO</p>
+      <p class="section-head__kicker">出发前先看看</p>
       <h1>常见问题</h1>
       <p>
-        共 {faqs.length} 条。每条问答<strong>脱离上下文也能独立成立</strong>，标注来源与更新时间，
-        并带稳定锚点便于外部深链引用。无可靠来源的一律标注「待核实」，不编造答案。
+        关于沙田港的 {faqs.length} 个问题 —— 在哪里、怎么去、看什么玩什么、吃住与安全，
+        出发前最常问的都在这。拿不准的地方本站会照实标注，不编答案。
       </p>
     </header>
 
@@ -102,19 +101,14 @@ const jsonLd = S.graph([
                   </p>
                 )}
 
-                <p class="faq-item__more">
-                  {f.data.read_more.map((r) => (
-                    <a class="tag" href={href(r.href)}>
-                      <Icon name="arrow" size="0.8em" /> {r.label}
-                    </a>
-                  ))}
-                  <span class="tag subtle">更新于 {fmtDate(f.data.updated_at)}</span>
-                </p>
-
-                {f.data.citations.length > 0 && (
-                  <div style="margin-top:var(--sp-2)">
-                    <SourceList citations={f.data.citations} as="h4" label="本条来源" />
-                  </div>
+                {f.data.read_more.length > 0 && (
+                  <p class="faq-item__more">
+                    {f.data.read_more.map((r) => (
+                      <a class="tag" href={href(r.href)}>
+                        <Icon name="arrow" size="0.8em" /> {r.label}
+                      </a>
+                    ))}
+                  </p>
                 )}
               </article>
             ))}
