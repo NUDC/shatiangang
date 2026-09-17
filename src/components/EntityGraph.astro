@@ -1,0 +1,44 @@
+---
+/**
+ * 实体关系图谱（预案 §7.2）
+ *
+ * 核心目的：让 AI 顺着清晰的实体关系走到你这里，而不是靠关键词堆叠。
+ * 每个实体标签是一条真实内链；未建页的概念实体渲染成不可点的标记，
+ * 避免产生死链（死链是 §8 里的月度巡检指标）。
+ */
+import { resolveEntities } from '@/data/site';
+import Icon from './Icon.astro';
+import { href } from '@/lib/url';
+
+interface Props {
+  entityIds: string[];
+  title?: string;
+  currentPath?: string;
+}
+const { entityIds, title = '本页涉及的实体', currentPath } = Astro.props;
+const entities = resolveEntities(entityIds);
+---
+
+{
+  entities.length > 0 && (
+    <nav class="entity-graph" aria-label={title}>
+      <p class="entity-graph__title">{title}</p>
+      <ul>
+        {entities.map((e) =>
+          e.href && e.href !== currentPath ? (
+            <li>
+              <a class="tag tag--accent" href={href(e.href)} title={e.summary}>
+                <Icon name="link" size="0.85em" />
+                {e.name}
+              </a>
+            </li>
+          ) : (
+            <li>
+              <span class="tag" title={e.summary}>{e.name}</span>
+            </li>
+          )
+        )}
+      </ul>
+    </nav>
+  )
+}

@@ -1,0 +1,46 @@
+---
+import { NAV, SITE } from '@/data/site';
+import Icon from './Icon.astro';
+import { href } from '@/lib/url';
+
+const current = Astro.url.pathname;
+const home = href('/');
+
+/**
+ * 二级页面也要点亮所属主题，否则导航失去定位感。
+ *
+ * **比较必须在同一层：** Astro.url.pathname 带挂载前缀（/shatian/haisi/），
+ * NAV 里的是逻辑路径（/haisi/），直接比永远不相等 —— 带前缀部署时整条导航
+ * 会一个都不高亮，而页面本身看不出任何异常。
+ */
+const isActive = (logicalPath: string) => {
+  const target = href(logicalPath);
+  return current === target || (target !== home && current.startsWith(target));
+};
+---
+
+<a class="skip-link" href="#main">跳到正文</a>
+
+<header class="site-header">
+  <div class="wrap site-header__inner">
+    <a class="brand" href={href('/')} aria-label={`${SITE.name} 首页`}>
+      <Icon name="anchor" size="1.7rem" class="brand__mark" />
+      <span>北部湾沙田港</span>
+      <span class="brand__sub">Shatian Port · Beibu Gulf</span>
+    </a>
+
+    <nav class="site-nav" aria-label="主导航">
+      <ul>
+        {
+          NAV.map((item) => (
+            <li>
+              <a href={href(item.href)} aria-current={isActive(item.href) ? 'page' : undefined}>
+                {item.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+  </div>
+</header>

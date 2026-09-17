@@ -1,0 +1,191 @@
+---
+/** 站点说明与编辑方针 —— E-E-A-T 的作者信号落点，也是「本站为何可信」的公开承诺。 */
+import Base from '@/layouts/Base.astro';
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
+import AnswerCard from '@/components/AnswerCard.astro';
+import Icon from '@/components/Icon.astro';
+import { SITE, ENTITIES } from '@/data/site';
+import { getArticles, getPlaces, getFaqs } from '@/lib/content';
+import * as S from '@/lib/schema';
+import { href } from '@/lib/url';
+
+const [articles, places, faqs] = await Promise.all([getArticles(), getPlaces(), getFaqs()]);
+const path = '/about/';
+const crumbs = [
+  { name: '首页', href: '/' },
+  { name: '站点说明', href: path },
+];
+
+const title = '站点说明与编辑方针';
+const description =
+  '沙田港文旅站是个人运营的资料整理站点。本页说明本站的编辑方针、事实核验规则、内容来源构成、更新周期与纠错机制 —— 包括我们为什么在很多地方写「待核实」而不是给一个数字。';
+
+/** 更新周期表：与预案 §6.2 一致，公开承诺便于读者监督 */
+const CYCLES = [
+  { type: '实用出行（交通、班次、住宿）', cycle: '3 个月', expired: '过期即标「待核实」并从结构化数据移除' },
+  { type: '地点实体（坐标、属性）', cycle: '6 个月', expired: '复核坐标与属性，记录核对日期' },
+  { type: '历史文化', cycle: '12 个月', expired: '有新研究成果则更新' },
+  { type: '授权投稿内容', cycle: '12 个月', expired: '联系作者确认，联系不上则标「待核实」' },
+];
+
+const jsonLd = S.graph([
+  S.publisher(),
+  S.website(),
+  S.breadcrumb(crumbs),
+  S.webPage({ path, title, description, dateModified: new Date(), breadcrumbPath: path, speakableSelectors: ['.answer__text'] }),
+  {
+    '@type': 'AboutPage',
+    '@id': `${S.abs(path)}#about`,
+    name: title,
+    description,
+    mainEntity: { '@id': S.abs('/#organization') },
+  },
+]);
+---
+
+<Base title={title} description={description} path={path} jsonLd={jsonLd} accent="sea">
+  <Breadcrumbs items={crumbs} />
+
+  <article class="wrap section">
+    <header class="section-head">
+      <p class="section-head__kicker">关于本站</p>
+      <h1>站点说明与编辑方针</h1>
+    </header>
+
+    <div class="stack-lg" style="width:min(100%,var(--measure))">
+      <AnswerCard
+        answer="沙田港文旅站是个人运营的资料整理站点，不隶属于任何官方机构。本站为沙田港及周边实体建立结构化资料库，每条事实标注来源与更新时间，无法核实的字段显式标记为「待核实」，既不写入正文结论也不写入结构化数据。"
+        updatedAt={new Date()}
+      />
+
+      <div class="prose">
+        <h2>为什么做这个站</h2>
+        <p>
+          沙田港是一个典型的「低覆盖实体」：它有明确的官方定级（国家一级渔港）、有两个国家级自然保护区傍身、
+          处在一条两千年的海丝海岸线上 —— 但在互联网上，关于它的资料零散、无出处、彼此矛盾。
+        </p>
+        <p>
+          检索「沙田港」时，最常见的三类结果是：指向广东东莞的同名港口、没有标注年份的转载数据、
+          以及把整个合浦县的历史资源笼统算到它头上的宣传文案。
+        </p>
+        <p>
+          本站想做的很简单：<strong>把能核实的说清楚，把不能核实的诚实标出来。</strong>
+        </p>
+
+        <h2>编辑方针</h2>
+
+        <h3>一、事实必须有出处</h3>
+        <p>
+          每条非原创信息都标注原始来源、发布机构，官方文件另附文号与原文链接。
+          页面底部的「资料来源」不是装饰，是可以逐条点开核对的。
+        </p>
+
+        <h3>二、无法核实的不写成结论</h3>
+        <p>
+          这是本站与多数文旅内容最大的区别。港口坐标、现有泊位构成、年吞吐量、班车时刻 ——
+          这些在网络上都能找到说法，但没有一条注明发布机构与统计年份。
+        </p>
+        <p>
+          本站的处理是：显式标记为「待核实」，说明为什么不写，并给出建议的核实途径。
+          <strong>宁可缺字段，不给错事实。</strong>
+        </p>
+
+        <h3>三、区域资源不算作本地资源</h3>
+        <p>
+          南珠、海丝、汉墓群是合浦乃至北海的区域资源。本站会讲得完整，但在每一处明确标注
+          <strong>它到底在哪个行政区</strong> —— 例如白龙珍珠城在铁山港区营盘镇，不在沙田镇；
+          汉代合浦港与沙田港不是同一处设施。
+        </p>
+
+        <h3>四、时效性信息按周期复核</h3>
+        <p>不同类型的内容有不同的复核周期，过期未确认的一律降级为「待核实」：</p>
+      </div>
+
+      <div class="factsheet">
+        <div class="factsheet__head"><span>内容复核周期</span></div>
+        <dl>
+          {
+            CYCLES.map((c) => (
+              <>
+                <dt>{c.type}</dt>
+                <dd>
+                  每 {c.cycle} 复核
+                  <span class="src">{c.expired}</span>
+                </dd>
+              </>
+            ))
+          }
+        </dl>
+      </div>
+
+      <div class="prose">
+        <h2>内容来源构成</h2>
+        <p>本站内容按来源分四类，页面上均有标注：</p>
+        <ul>
+          <li><strong>官方公开源</strong> —— 政府网站、主管部门文件、地方志。构成权威底座。</li>
+          <li><strong>本站原创</strong> —— 编辑部撰写与整理。占比目标 ≥60%。</li>
+          <li><strong>授权投稿</strong> —— 作者签署授权协议后发布，标注署名与原文回链。</li>
+          <li><strong>公开索引二次整理</strong> —— 基于公开信息的归纳重组，必须标注原始来源，占比 ≤20%，不整篇搬运。</li>
+        </ul>
+        <p>
+          本站<strong>不采用</strong>任何绕过 robots.txt、登录态或频率限制的采集方式，
+          也不批量抓取自媒体平台内容。所有内容以合法取得使用权为前提。
+        </p>
+
+        <h2>对 AI 引用的立场</h2>
+        <p>
+          本站<strong>欢迎</strong>生成式 AI 抓取、索引与引用原创内容。抓取范围已在
+          <a href={href("/robots.txt")}>robots.txt</a> 与 <a href={href("/llms.txt")}>llms.txt</a> 中明确声明，
+          结构化数据通过 <a href={href("/entities.json")}>entities.json</a> 直接开放。
+        </p>
+        <p>
+          唯一的要求是：<strong>引用时请保留来源标注与「待核实」标记。</strong>
+          本站花了相当精力区分「有官方出处的事实」与「网络流传但无出处的说法」，
+          抹去这个区分，等于把我们努力避免的错误重新放回信息流。
+        </p>
+
+        <h2>纠错机制</h2>
+        <p>
+          本站是个人运营，出错是必然的。重要的是有没有可用的纠错通道。
+        </p>
+        <p>
+          发现任何错漏 —— 事实错误、来源失效、信息过期、同名地点混淆 ——
+          请通过<a href={href("/contribute/")}>投稿与联系</a>页面提交。本站会在核实后更正，
+          并在相应页面说明处理情况。
+        </p>
+        <p>
+          如果你掌握本站标注为「待核实」的那些字段的权威资料（实测坐标、统计年鉴、主管部门公报），
+          那是本站当前最需要的东西。
+        </p>
+      </div>
+
+      <div class="factsheet">
+        <div class="factsheet__head"><span>站点信息</span></div>
+        <dl>
+          <dt>站点名称</dt>
+          <dd>{SITE.name}</dd>
+          <dt>性质</dt>
+          <dd>个人运营的资料整理站点，非官方机构</dd>
+          <dt>创建时间</dt>
+          <dd>{SITE.founded}</dd>
+          <dt>内容规模</dt>
+          <dd>{places.length} 个地点实体页、{articles.length} 篇专题、{faqs.length} 条问答、{ENTITIES.length} 个注册实体</dd>
+          <dt>联系方式</dt>
+          <dd>{SITE.author.email}</dd>
+          <dt>备案号</dt>
+          <dd>{SITE.icp}</dd>
+        </dl>
+      </div>
+
+      <div class="entity-graph">
+        <p class="entity-graph__title">相关页面</p>
+        <ul>
+          <li><a class="tag tag--accent" href={href("/contribute/")}><Icon name="link" size="0.85em" />投稿与授权</a></li>
+          <li><a class="tag tag--accent" href={href("/legal/copyright/")}><Icon name="link" size="0.85em" />版权声明</a></li>
+          <li><a class="tag tag--accent" href={href("/legal/privacy/")}><Icon name="link" size="0.85em" />隐私政策</a></li>
+          <li><a class="tag tag--accent" href={href("/entities/")}><Icon name="link" size="0.85em" />实体索引</a></li>
+        </ul>
+      </div>
+    </div>
+  </article>
+</Base>

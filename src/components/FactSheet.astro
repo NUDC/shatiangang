@@ -1,0 +1,45 @@
+---
+/**
+ * 实体属性表
+ *
+ * GEO 的引用最小单位是「有坐标、有属性、可验证的实体页」（预案 §1.2）。
+ * 这张表就是那份属性清单：语义化 <dl>、逐条带来源、未核实项显式标注。
+ * 已核实的条目会同步进 JSON-LD 的 additionalProperty。
+ */
+import Icon from './Icon.astro';
+import { fmtDate } from '@/lib/content';
+
+interface Props {
+  title?: string;
+  updatedAt?: Date;
+  facts: { label: string; value: string; source?: string; verified?: boolean }[];
+}
+const { title = '实体属性', updatedAt, facts } = Astro.props;
+---
+
+{
+  facts.length > 0 && (
+    <section class="factsheet" aria-label={title}>
+      <div class="factsheet__head">
+        <span>{title}</span>
+        {updatedAt && <span class="subtle">属性核对于 {fmtDate(updatedAt)}</span>}
+      </div>
+      <dl>
+        {facts.map((f) => (
+          <>
+            <dt>{f.label}</dt>
+            <dd>
+              {f.value}
+              {f.verified === false && (
+                <span class="tag tag--warn" style="margin-left:.4rem">
+                  <Icon name="alert" size="0.85em" /> 待核实
+                </span>
+              )}
+              {f.source && <span class="src">来源：{f.source}</span>}
+            </dd>
+          </>
+        ))}
+      </dl>
+    </section>
+  )
+}

@@ -1,0 +1,38 @@
+---
+/**
+ * 待核实提示条（预案 §2.2 的可视化落点）
+ *
+ * 无法核实的事实不写成结论。把缺口显式标出来，对读者是诚实，
+ * 对生成引擎是明确的置信度信号 —— 比含糊其辞更可能被正确引用。
+ */
+import Icon from './Icon.astro';
+import { href } from '@/lib/url';
+
+interface Props {
+  items: { field: string; note: string; how?: string }[];
+}
+const { items } = Astro.props;
+---
+
+{
+  items.length > 0 && (
+    <aside class="verify-notice" aria-label="待核实字段说明">
+      <p class="verify-notice__title">
+        <Icon name="alert" size="1.1em" />
+        本页有 {items.length} 项事实尚未实地核实
+      </p>
+      <p>
+        以下字段无可靠公开来源或需实地复核，本站暂不给出结论，也不写入结构化数据。
+        如你掌握可核实的资料，欢迎<a href={href("/contribute/")}>提交更正</a>。
+      </p>
+      <ul>
+        {items.map((it) => (
+          <li>
+            <code>{it.field}</code> — {it.note}
+            {it.how && <span class="subtle">（核实途径：{it.how}）</span>}
+          </li>
+        ))}
+      </ul>
+    </aside>
+  )
+}

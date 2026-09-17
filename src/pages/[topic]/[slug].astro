@@ -1,0 +1,235 @@
+---
+/** 二级专题正文页 */
+import type { GetStaticPaths } from 'astro';
+import Base from '@/layouts/Base.astro';
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
+import AnswerCard from '@/components/AnswerCard.astro';
+import VerifyNotice from '@/components/VerifyNotice.astro';
+import SourceList from '@/components/SourceList.astro';
+import EntityGraph from '@/components/EntityGraph.astro';
+import Icon from '@/components/Icon.astro';
+import {
+  getArticles,
+  getTopics,
+  resolveRelated,
+  buildCitationIndex,
+  citationKey,
+  countWords,
+  fmtDate,
+  fmtDateCN,
+  type Article,
+} from '@/lib/content';
+import * as S from '@/lib/schema';
+import { resolveEntities } from '@/data/site';
+import { render } from 'astro:content';
+import { href } from '@/lib/url';
+
+export const getStaticPaths: GetStaticPaths = async () => {
+  const articles = await getArticles();
+  return articles.map((article) => ({
+    params: { topic: article.data.topic, slug: article.id },
+    props: { article },
+  }));
+};
+
+type Props = { article: Article };
+const { article } = Astro.props as Props;
+const d = article.data;
+const path = `/${d.topic}/${article.id}/`;
+
+const topics = await getTopics();
+const topic = topics.find((t) => t.data.slug === d.topic)!;
+const { Content } = await render(article);
+const related = await resolveRelated(article);
+const citations = await buildCitationIndex();
+const citedBy = citations.get(citationKey(article)) ?? 0;
+const wordCount = countWords(article.body ?? '');
+
+const crumbs = [
+  { name: '首页', href: '/' },
+  { name: topic.data.title, href: `/${d.topic}/` },
+  { name: d.title, href: path },
+];
+
+const entities = resolveEntities(d.entity_tags);
+
+const jsonLd = S.graph([
+  S.publisher(),
+  S.website(),
+  S.breadcrumb(crumbs),
+  S.webPage({
+    path,
+    title: d.title,
+    description: d.description,
+    datePublished: d.published_at,
+    dateModified: d.updated_at,
+    breadcrumbPath: path,
+    speakableSelectors: ['.answer__text'],
+  }),
+  S.article({
+    path,
+    headline: d.title,
+    description: d.description,
+    author: d.author,
+    datePublished: d.published_at,
+    dateModified: d.updated_at,
+    wordCount,
+    articleSection: topic.data.title,
+    about: entities.slice(0, 2),
+    mentions: entities.slice(2),
+    citations: d.citations,
+  }),
+  d.questions.length > 0 &&
+    d.answer &&
+    S.faqPage(path, [{ question: d.questions[0]!, answer: d.answer }]),
+]);
+---
+
+<Base
+  title={d.title}
+  description={d.description}
+  path={path}
+  jsonLd={jsonLd}
+  ogType="article"
+  accent={topic.data.accent}
+  publishedAt={d.published_at}
+  updatedAt={d.updated_at}
+  author={d.author}
+  keywords={entities.map((e) => e.name)}
+>
+  <Breadcrumbs items={crumbs} />
+
+  <article class="wrap section">
+    <header class="doc-head">
+      <p class="section-head__kicker">{topic.data.title}</p>
+      <h1>{d.title}</h1>
+      <p class="doc-head__lede">{d.description}</p>
+    </header>
+
+    <div class="doc-grid">
+      <!-- 左侧粘性元信息栏。原来这些信息挤在标题下方一行，而正文只占左半幅、
+           右半幅整片留白 —— 把元信息移到这里，既填实了版面，
+           也让"谁写的、什么时候更新的、来源类型是什么"在滚动中一直可见。 -->
+      <aside class="doc-rail">
+        <dl class="doc-meta">
+          <dt>作者</dt><dd>{d.author}</dd>
+          <dt>发布</dt><dd>{fmtDate(d.published_at)}</dd>
+          <dt>更新</dt><dd>{fmtDate(d.updated_at)}</dd>
+          <dt>篇幅</dt><dd>约 {d.reading_time} 分钟</dd>
+          <dt>来源类型</dt><dd>{d.source_platform}</dd>
+          <dt>授权状态</dt><dd>{d.license_status}</dd>
+          {citedBy > 0 && (<><dt>站内引用</dt><dd>{citedBy} 次</dd></>)}
+        </dl>
+
+        {d.questions.length > 0 && (
+          <div class="doc-rail__block">
+            <p class="entity-graph__title">本文正面回答</p>
+            <ul class="doc-qs">
+              {d.questions.map((q: string) => (
+                <li><Icon name="check" size="0.8em" /> {q}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </aside>
+
+      <div class="stack-lg doc-body">
+      {d.answer && <AnswerCard answer={d.answer} question={d.questions[0]} updatedAt={d.updated_at} />}
+
+      {d.unverified.length > 0 && <VerifyNotice items={d.unverified} />}
+
+      <div class="prose">
+        <Content />
+      </div>
+
+      <SourceList citations={d.citations} />
+
+      <EntityGraph entityIds={d.entity_tags} currentPath={path} />
+
+      <p class="small subtle">
+        本页最后更新于 {fmtDateCN(d.updated_at)}。
+        {d.original_url && (
+          <>
+            原文链接：<a href={d.original_url} rel="nofollow noopener" target="_blank">{d.original_url}</a>。
+          </>
+        )}
+        如发现错漏，欢迎<a href={href("/contribute/")}>提交更正</a>。
+      </p>
+      </div>
+    </div>
+  </article>
+
+  {
+    (related.articles.length > 0 || related.places.length > 0) && (
+      <section class="section">
+        <div class="wrap">
+          <header class="section-head">
+            <p class="section-head__kicker">实体关系图谱</p>
+            <h2>相关内容</h2>
+          </header>
+          <div class="grid-cards">
+            {related.places.map((p) => (
+              <a class="card" href={href(`/place/${p.id}/`)}>
+                <span class="tag tag--accent">
+                  <Icon name="map" size="0.8em" /> 地点实体
+                </span>
+                <span class="card__title">{p.data.title}</span>
+                <span class="card__text">{p.data.description}</span>
+              </a>
+            ))}
+            {related.articles.map((a) => (
+              <a class="card" href={href(`/${a.data.topic}/${a.id}/`)}>
+                <span class="tag">
+                  {topics.find((t) => t.data.slug === a.data.topic)?.data.title}
+                </span>
+                <span class="card__title">{a.data.title}</span>
+                <span class="card__text">{a.data.description}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+</Base>
+
+<style>
+  .doc-head { max-width: 46rem; margin-bottom: var(--sp-6); }
+  .doc-head__lede {
+    font-size: var(--step-1);
+    color: var(--fg-muted);
+    margin-top: var(--sp-3);
+    line-height: 1.65;
+  }
+
+  .doc-grid {
+    display: grid;
+    gap: var(--sp-5);
+    grid-template-columns: minmax(0, 15rem) minmax(0, 1fr);
+    align-items: start;
+  }
+  /* 窄屏收成单栏，元信息栏回到正文上方 —— 粘性在小屏上只会挡内容 */
+  @media (max-width: 62rem) {
+    .doc-grid { grid-template-columns: 1fr; gap: var(--sp-4); }
+    .doc-rail { position: static !important; }
+  }
+
+  .doc-rail {
+    position: sticky;
+    top: 6rem;
+    font-size: var(--step--1);
+  }
+  .doc-rail__block { margin-top: var(--sp-4); padding-top: var(--sp-3); border-top: 1px solid var(--line); }
+
+  .doc-meta { display: grid; grid-template-columns: auto 1fr; gap: 0.35rem var(--sp-3); margin: 0; }
+  .doc-meta dt { color: var(--fg-subtle); font-size: var(--step--2); letter-spacing: 0.08em; }
+  .doc-meta dd { margin: 0; color: var(--fg-muted); }
+
+  .doc-qs li {
+    display: flex; gap: 0.45rem; align-items: baseline;
+    color: var(--fg-muted); margin-block: 0.45rem; line-height: 1.6;
+  }
+  .doc-qs svg { flex: none; color: var(--accent); }
+
+  .doc-body { min-width: 0; }
+</style>

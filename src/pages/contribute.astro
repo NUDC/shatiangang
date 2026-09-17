@@ -1,0 +1,169 @@
+---
+/**
+ * 投稿与授权
+ * 静态站点没有后端，投稿走邮件通道。表单路径在 robots.txt 中已禁止抓取。
+ */
+import Base from '@/layouts/Base.astro';
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
+import AnswerCard from '@/components/AnswerCard.astro';
+import Icon from '@/components/Icon.astro';
+import { SITE } from '@/data/site';
+import { getPlaces, getArticles, type UnverifiedField } from '@/lib/content';
+import * as S from '@/lib/schema';
+import { href } from '@/lib/url';
+
+const path = '/contribute/';
+const crumbs = [
+  { name: '首页', href: '/' },
+  { name: '投稿与授权', href: path },
+];
+
+const title = '投稿与授权';
+const description =
+  '向沙田港文旅站提供资料、照片或更正建议的方式与规则。本站对授权投稿的处理流程是：签署授权协议 → 标注作者署名与原文回链 → 发布。未取得授权的内容不会进入内容库。';
+
+/** 当前最需要的资料 —— 从内容里实际的待核实项汇总，而不是手写清单 */
+const [places, articles] = await Promise.all([getPlaces(), getArticles()]);
+const wanted = [
+  ...places.flatMap((p) =>
+    p.data.unverified.map((u: UnverifiedField) => ({ ...u, from: p.data.title, href: `/place/${p.id}/` }))
+  ),
+  ...articles.flatMap((a) =>
+    a.data.unverified.map((u: UnverifiedField) => ({ ...u, from: a.data.title, href: `/${a.data.topic}/${a.id}/` }))
+  ),
+];
+
+const jsonLd = S.graph([
+  S.publisher(),
+  S.website(),
+  S.breadcrumb(crumbs),
+  S.webPage({ path, title, description, dateModified: new Date(), breadcrumbPath: path, speakableSelectors: ['.answer__text'] }),
+  {
+    '@type': 'ContactPage',
+    '@id': `${S.abs(path)}#contact`,
+    name: title,
+    description,
+  },
+]);
+---
+
+<Base title={title} description={description} path={path} jsonLd={jsonLd} accent="coral">
+  <Breadcrumbs items={crumbs} />
+
+  <article class="wrap section">
+    <header class="section-head">
+      <p class="section-head__kicker">UGC 与纠错</p>
+      <h1>投稿与授权</h1>
+    </header>
+
+    <div class="stack-lg" style="width:min(100%,var(--measure))">
+      <AnswerCard
+        answer={`投稿请发送至 ${SITE.author.email}。本站对授权投稿的处理流程是：投稿 → 签署《内容授权协议》 → 标注作者署名与原文链接回链 → 发布。著作权始终归作者所有，本站不因发布而取得著作权。`}
+        updatedAt={new Date()}
+      />
+
+      <div class="prose">
+        <h2>本站当前最需要什么</h2>
+        <p>
+          比起「再写一篇介绍」，本站现在更缺的是<strong>能把「待核实」变成「已核实」的硬资料</strong>。
+          以下是全站尚未核实的字段，共 {wanted.length} 项：
+        </p>
+      </div>
+
+      <div class="factsheet">
+        <div class="factsheet__head">
+          <span>待核实字段清单</span>
+          <span class="subtle">{wanted.length} 项</span>
+        </div>
+        <dl>
+          {
+            wanted.map((w) => (
+              <>
+                <dt>
+                  <a href={href(w.href)}>{w.from}</a>
+                  <span class="src">{w.field}</span>
+                </dt>
+                <dd>
+                  {w.note}
+                  {w.how && <span class="src">建议核实途径：{w.how}</span>}
+                </dd>
+              </>
+            ))
+          }
+        </dl>
+      </div>
+
+      <div class="prose">
+        <h2>可以提供什么</h2>
+        <ul>
+          <li><strong>官方资料</strong> —— 统计年鉴、主管部门公报、地方志、政府公开文件（请附文号或出处页面）</li>
+          <li><strong>实测数据</strong> —— GNSS 实测坐标（请注明设备、坐标系与测量时间）</li>
+          <li><strong>实地照片</strong> —— 码头、滩涂、红树林、渔船作业（请注明拍摄时间与地点）</li>
+          <li><strong>口述材料</strong> —— 疍家生活、渔业变迁、地名由来（这是本站最薄弱的部分）</li>
+          <li><strong>近期出行反馈</strong> —— 带日期的交通、住宿、路况实况</li>
+          <li><strong>错误更正</strong> —— 事实错误、失效链接、过期信息、同名地点混淆</li>
+        </ul>
+
+        <h2>投稿流程</h2>
+        <ol>
+          <li>
+            <strong>发送资料</strong> —— 邮件至 <a href={`mailto:${SITE.author.email}`}>{SITE.author.email}</a>，
+            注明希望使用的署名、资料来源，以及是否已在其他平台发布（如有请附原文链接）。
+          </li>
+          <li>
+            <strong>确认授权</strong> —— 本站回复《内容授权协议》全文，你确认接受后进入发布流程。
+            协议要点：非独占授权、著作权归你、必须署名与回链、可随时撤回。
+          </li>
+          <li>
+            <strong>核验与编辑</strong> —— 本站核对资料来源，进行不改变原意的技术性编辑。
+            涉及事实与观点的改动会先征得你同意。
+          </li>
+          <li>
+            <strong>发布</strong> —— 标注你的署名、原文链接与投稿日期。
+          </li>
+        </ol>
+
+        <h2>本站不会做的事</h2>
+        <ul>
+          <li>不发布未取得授权的内容</li>
+          <li>不删除或弱化作者署名与原文回链</li>
+          <li>不把投稿内容转授权给第三方</li>
+          <li>不公开你的联系方式</li>
+        </ul>
+
+        <h2>如果你不希望被 AI 抓取</h2>
+        <p>
+          本站默认对生成式 AI 开放正文抓取（详见<a href={href("/legal/copyright/")}>版权声明</a>）。
+          如果你的投稿内容<strong>不希望</strong>被 AI 抓取，请在投稿时明确说明 ——
+          本站会对该内容单独设置抓取限制，或与你协商不予发布。
+        </p>
+      </div>
+
+      <div class="verify-notice">
+        <p class="verify-notice__title">
+          <Icon name="alert" size="1.1em" /> 投稿前请确认
+        </p>
+        <ul>
+          <li>内容为你原创，或你已取得完整的合法使用权</li>
+          <li>不侵犯第三方的著作权、肖像权与隐私权</li>
+          <li>涉及可识别人物的照片已取得其同意</li>
+          <li>资料的来源与时间信息真实，未经编造</li>
+        </ul>
+        <p style="margin-top:.6rem">
+          完整条款见<a href={href("/legal/license-agreement/")}>《内容授权协议》</a>与
+          <a href={href("/legal/terms/")}>《用户协议》</a>。
+        </p>
+      </div>
+
+      <div class="entity-graph">
+        <p class="entity-graph__title">相关页面</p>
+        <ul>
+          <li><a class="tag tag--accent" href={href("/legal/license-agreement/")}><Icon name="link" size="0.85em" />内容授权协议</a></li>
+          <li><a class="tag tag--accent" href={href("/legal/terms/")}><Icon name="link" size="0.85em" />用户协议</a></li>
+          <li><a class="tag tag--accent" href={href("/legal/privacy/")}><Icon name="link" size="0.85em" />隐私政策</a></li>
+          <li><a class="tag tag--accent" href={href("/about/")}><Icon name="link" size="0.85em" />编辑方针</a></li>
+        </ul>
+      </div>
+    </div>
+  </article>
+</Base>

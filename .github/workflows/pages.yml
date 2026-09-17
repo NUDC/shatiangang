@@ -1,0 +1,76 @@
+name: Deploy to GitHub Pages
+
+# GitHub Pages 部署。
+#
+# 与 frp+网关那套线上部署是**两个独立的托管目标**，同一份源码：
+#   · GitHub Pages     https://nudc.github.io/shatiangang/   （本工作流，展示用）
+#   · 自建 nginx        http://114.55.135.237/shatian/        （ops/ 那套）
+#
+# 两者的差别只有一个环境变量：BASE_PATH。Pages 项目站点挂在 /<仓库名>/ 下，
+# 所以这里是 /shatiangang/；自建那套是 /shatian/。站内链接经 src/lib/url.ts
+# 自动适配，业务代码一行都不用改。
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # 允许手动触发
+
+# Pages 部署的标准权限组合
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同一时间只跑一个部署，新的推送取消进行中的旧部署
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build
+        env:
+          # GitHub 项目站点的域名是全小写的 <user>.github.io，
+          # 仓库名段大小写保留。canonical / sitemap / JSON-LD @id 全从这里派生。
+          SITE_URL: https://nudc.github.io
+          BASE_PATH: /shatiangang/
+          # 高德明文安全密钥。可用仓库 Secret 覆盖 src/data/site.ts 里的默认值 ——
+          # 但由于是明文模式，它终究会出现在公开的 Pages 页面里，
+          # 真正的防护是高德控制台的**域名白名单**（把 nudc.github.io 加进去）。
+          PUBLIC_AMAP_SECURITY_CODE: ${{ secrets.AMAP_SECURITY_CODE }}
+        run: npm run build
+
+      - name: GEO 自检
+        env:
+          BASE_PATH: /shatiangang/
+        run: npm run audit:geo
+
+      # **GitHub Pages 默认用 Jekyll，会忽略以 _ 开头的目录。**
+      # Astro 的产物放在 _astro/ 下 —— 没有这个文件，全站 CSS/JS 都 404，
+      # 页面出来是无样式的纯文本。这一步是 Pages + 任何静态生成器的必备。
+      - run: touch dist/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

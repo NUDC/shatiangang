@@ -1,0 +1,29 @@
+# build output
+dist/
+dist-release/
+.astro/
+
+# deps
+node_modules/
+
+# env
+.env
+.env.production
+.env.local
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+*.log
+
+# editor / os
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# 草稿箱：license_status = 待确认 的内容不入库、不发布（预案 §2.2）
+src/content/**/_draft/
+
+# 服务端已移除；历史遗留的编译产物目录（如有）
+/server/target/

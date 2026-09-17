@@ -1,0 +1,280 @@
+---
+/**
+ * 地点实体页 —— GEO 引用的最小单位（预案 §1.2）
+ * 每页只描述一个实体，带行政区划全称、别称、坐标核实状态与可核验属性表。
+ */
+import type { GetStaticPaths } from 'astro';
+import Base from '@/layouts/Base.astro';
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
+import AnswerCard from '@/components/AnswerCard.astro';
+import VerifyNotice from '@/components/VerifyNotice.astro';
+import FactSheet from '@/components/FactSheet.astro';
+import SourceList from '@/components/SourceList.astro';
+import EntityGraph from '@/components/EntityGraph.astro';
+import AmapView from '@/components/AmapView.astro';
+import Icon from '@/components/Icon.astro';
+import {
+  getPlaces,
+  getTopics,
+  getFaqs,
+  resolveRelated,
+  buildCitationIndex,
+  citationKey,
+  countWords,
+  fmtDate,
+  fmtDateCN,
+  type Place,
+  type Fact,
+  getMapCenter,
+} from '@/lib/content';
+import * as S from '@/lib/schema';
+import { resolveEntities, entityById } from '@/data/site';
+import { render } from 'astro:content';
+import { href } from '@/lib/url';
+
+export const getStaticPaths: GetStaticPaths = async () => {
+  const places = await getPlaces();
+  return places.map((place) => ({ params: { slug: place.id }, props: { place } }));
+};
+
+type Props = { place: Place };
+const { place } = Astro.props as Props;
+const d = place.data;
+const path = `/place/${place.id}/`;
+
+const topics = await getTopics();
+const { Content } = await render(place);
+const related = await resolveRelated(place);
+const citations = await buildCitationIndex();
+const citedBy = citations.get(citationKey(place)) ?? 0;
+const faqs = (await getFaqs()).filter((f) => f.data.entity_tags.includes(place.id));
+
+const entity = entityById.get(place.id);
+const entities = resolveEntities(d.entity_tags);
+const hasGeo = d.geo.lat !== null && d.geo.lng !== null;
+
+/** 坐标精度的中文说明。裸坐标不带这个，下游会把镇中心点当成设施位置用 */
+const PRECISION: Record<string, string> = {
+  'settlement-centroid': ' · 聚落中心点',
+  facility: ' · 设施位置',
+  'area-indicative': ' · 面状地物指示点',
+};
+
+/** 方位示意图上画了哪几个实体 */
+const MAPPED = new Set(['shatian-gang', 'shatian-zhen', 'shatian-bandao', 'yingluo-gang', 'dandou-hai']);
+
+const crumbs = [
+  { name: '首页', href: '/' },
+  { name: '地点实体', href: '/place/' },
+  { name: d.title, href: path },
+];
+
+/** 已核实的属性进结构化数据，未核实的只在页面上显示并标注 */
+const jsonLd = S.graph([
+  S.publisher(),
+  S.website(),
+  S.breadcrumb(crumbs),
+  S.webPage({
+    path,
+    title: d.title,
+    description: d.description,
+    datePublished: d.published_at,
+    dateModified: d.updated_at,
+    breadcrumbPath: path,
+    speakableSelectors: ['.answer__text'],
+  }),
+  S.place({
+    path,
+    id: place.id,
+    type: d.place_type,
+    name: d.title,
+    description: d.description,
+    adminFull: d.admin_full,
+    // 注册表与 frontmatter 各有一份，去重避免 alternateName 出现重复值
+    altNames: [...new Set([...d.alt_names, ...(entity?.altNames ?? [])])],
+    sameAs: [...new Set([...d.same_as, ...(entity?.sameAs ?? [])])],
+    geo: d.geo,
+    openingHours: d.visit.opening_hours,
+    additionalProperties: d.facts.map((f: Fact) => ({
+      label: f.label,
+      value: f.value,
+      verified: f.verified !== false,
+    })),
+  }),
+  S.article({
+    path,
+    headline: d.title,
+    description: d.description,
+    author: d.author,
+    datePublished: d.published_at,
+    dateModified: d.updated_at,
+    wordCount: countWords(place.body ?? ''),
+    articleSection: '地点实体',
+    about: entities.slice(0, 1),
+    mentions: entities.slice(1),
+    citations: d.citations,
+  }),
+  faqs.length > 0 &&
+    S.faqPage(path, faqs.map((f) => ({ question: f.data.question, answer: f.data.answer }))),
+]);
+
+const mapCenter = await getMapCenter();
+---
+
+<Base
+  title={d.title}
+  description={d.description}
+  path={path}
+  jsonLd={jsonLd}
+  ogType="article"
+  accent="dusk"
+  publishedAt={d.published_at}
+  updatedAt={d.updated_at}
+  author={d.author}
+  keywords={[d.title, ...d.alt_names, d.admin_full]}
+>
+  <Breadcrumbs items={crumbs} />
+
+  <article class="wrap section">
+    <header class="doc-head">
+      <p class="section-head__kicker">
+        <Icon name="map" size="0.95em" /> 地点实体 · {d.place_type}
+      </p>
+      <h1>{d.title}</h1>
+      <p class="doc-head__lede">{d.description}</p>
+    </header>
+
+    {/* 地图放在双栏之外、整幅宽度 —— 它是这一页最该被看见的东西 */}
+    {MAPPED.has(place.id) && mapCenter && (
+      <div class="doc-media"><AmapView center={mapCenter} zoom={12} /></div>
+    )}
+
+    <div class="doc-grid">
+      <aside class="doc-rail">
+        <dl class="doc-meta">
+          <dt>行政区划</dt><dd>{d.admin_full}</dd>
+          {d.alt_names.length > 0 && (<><dt>别称</dt><dd>{d.alt_names.join('、')}</dd></>)}
+          <dt>坐标</dt>
+          <dd>
+            {hasGeo
+              ? `${d.geo.lat}, ${d.geo.lng} · ${d.geo.datum.toUpperCase()}${PRECISION[d.geo.precision ?? ''] ?? ''}`
+              : '待核实'}
+          </dd>
+          <dt>更新</dt><dd>{fmtDate(d.updated_at)}</dd>
+          <dt>来源类型</dt><dd>{d.source_platform}</dd>
+          {citedBy > 0 && (<><dt>站内引用</dt><dd>{citedBy} 次</dd></>)}
+        </dl>
+
+        {d.questions.length > 0 && (
+          <div class="doc-rail__block">
+            <p class="entity-graph__title">本页正面回答</p>
+            <ul class="doc-qs">
+              {d.questions.map((q: string) => (
+                <li><Icon name="check" size="0.8em" /> {q}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </aside>
+
+      <div class="stack-lg doc-body">
+      {d.answer && <AnswerCard answer={d.answer} question={d.questions[0]} updatedAt={d.updated_at} />}
+
+      <FactSheet facts={d.facts} updatedAt={d.updated_at} title={`${d.title} · 属性清单`} />
+
+      {d.unverified.length > 0 && <VerifyNotice items={d.unverified} />}
+
+      <div class="prose">
+        <Content />
+      </div>
+
+      {
+        faqs.length > 0 && (
+          <section>
+            <h2>关于{d.title}的常见问题</h2>
+            <div class="stack mt-4">
+              {faqs.map((f) => (
+                <div class="faq-item">
+                  <h3 id={f.id}>{f.data.question}</h3>
+                  <p>{f.data.answer}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )
+      }
+
+      <SourceList citations={d.citations} />
+
+      <EntityGraph entityIds={d.entity_tags} currentPath={path} />
+
+      <p class="small subtle">
+        本实体页最后核对于 {fmtDateCN(d.updated_at)}。按本站更新规则，地点实体的复核周期为 6 个月。
+        如你掌握带出处的资料（统计年鉴、主管部门公报、实测坐标），欢迎<a href={href("/contribute/")}>提交更正</a>。
+      </p>
+      </div>
+    </div>
+  </article>
+
+  {
+    (related.articles.length > 0 || related.places.length > 0) && (
+      <section class="section">
+        <div class="wrap">
+          <header class="section-head">
+            <p class="section-head__kicker">实体关系图谱</p>
+            <h2>相关实体与专题</h2>
+          </header>
+          <div class="grid-cards">
+            {related.places.map((p) => (
+              <a class="card" href={href(`/place/${p.id}/`)}>
+                <span class="tag tag--accent">
+                  <Icon name="map" size="0.8em" /> 地点实体
+                </span>
+                <span class="card__title">{p.data.title}</span>
+                <span class="card__text">{p.data.description}</span>
+                <span class="card__meta">
+                  <span>更新于 {fmtDate(p.data.updated_at)}</span>
+                </span>
+              </a>
+            ))}
+            {related.articles.map((a) => (
+              <a class="card" href={href(`/${a.data.topic}/${a.id}/`)}>
+                <span class="tag">
+                  {topics.find((t) => t.data.slug === a.data.topic)?.data.title}
+                </span>
+                <span class="card__title">{a.data.title}</span>
+                <span class="card__text">{a.data.description}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+</Base>
+
+<style>
+  .doc-head { max-width: 46rem; margin-bottom: var(--sp-5); }
+  .doc-head__lede { font-size: var(--step-1); color: var(--fg-muted); margin-top: var(--sp-3); line-height: 1.65; }
+  .doc-media { margin-bottom: var(--sp-6); }
+
+  .doc-grid {
+    display: grid;
+    gap: var(--sp-5);
+    grid-template-columns: minmax(0, 15rem) minmax(0, 1fr);
+    align-items: start;
+  }
+  @media (max-width: 62rem) {
+    .doc-grid { grid-template-columns: 1fr; gap: var(--sp-4); }
+    .doc-rail { position: static !important; }
+  }
+
+  .doc-rail { position: sticky; top: 6rem; font-size: var(--step--1); }
+  .doc-rail__block { margin-top: var(--sp-4); padding-top: var(--sp-3); border-top: 1px solid var(--line); }
+  .doc-meta { display: grid; grid-template-columns: auto 1fr; gap: 0.35rem var(--sp-3); margin: 0; }
+  .doc-meta dt { color: var(--fg-subtle); font-size: var(--step--2); letter-spacing: 0.08em; }
+  .doc-meta dd { margin: 0; color: var(--fg-muted); overflow-wrap: anywhere; }
+  .doc-qs li { display: flex; gap: 0.45rem; align-items: baseline; color: var(--fg-muted); margin-block: 0.45rem; line-height: 1.6; }
+  .doc-qs svg { flex: none; color: var(--accent); }
+  .doc-body { min-width: 0; }
+</style>

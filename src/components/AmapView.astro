@@ -1,0 +1,275 @@
+---
+/**
+ * 高德交互地图
+ *
+ * ── 为什么要包一层，而不是直接一个 <div id="map"> ──
+ *
+ * 1. **AI 爬虫不执行 JS。** 爬虫在这里只会看到一个空容器，所以地图本身
+ *    对 GEO/AEO 的贡献是零 —— 真正被读走的是图外那段 figcaption：
+ *    坐标、坐标系、精度、来源、以及"哪些地物本站没有坐标"。
+ *    那段文字必须留在 HTML 里，不能挪进 JS 渲染。
+ *
+ * 2. **本站只有一个可引用的坐标。** 沙田港、沙田半岛、英罗港、丹兜海
+ *    都没有可靠出处，所以高德图上**只打沙田镇一个点**。其余地物交给高德
+ *    自己的底图标注 —— 那是高德的数据，不是本站的断言，两者必须分得开。
+ *
+ * 3. **坐标系。** 本站数据是 WGS84，高德要 GCJ-02，直接填会偏几百米。
+ *    转换在构建期做完（src/lib/geo.ts），HTML 里两个坐标都写出来，
+ *    偏移量也标出来 —— 这个差值本身就是值得让人看见的事实。
+ *
+ * 4. **安全密钥用明文模式（securityJsCode）。** 纯静态托管没有服务端可藏密钥，
+ *    靠高德控制台的域名白名单兜底。见 src/data/site.ts 的 AMAP.securityCode。
+ */
+import Icon from './Icon.astro';
+import { AMAP } from '@/data/site';
+import { toAmap, distanceMeters, round6 } from '@/lib/geo';
+
+interface Props {
+  /** 地图中心与唯一标记的来源实体（必须是有坐标的那个） */
+  center: {
+    name: string;
+    lat: number;
+    lng: number;
+    datum: 'wgs84' | 'gcj02' | 'bd09';
+    precision: string | null;
+    source?: string;
+  };
+  zoom?: number;
+}
+const { center, zoom = 12 } = Astro.props;
+
+// 构建期完成坐标系转换：浏览器拿到的直接是高德能用的 GCJ-02
+const gcj = toAmap(center.lng, center.lat, center.datum);
+const offset = Math.round(distanceMeters([center.lng, center.lat], gcj));
+
+const PRECISION_CN: Record<string, string> = {
+  'settlement-centroid': '聚落中心点',
+  facility: '设施位置',
+  'area-indicative': '面状地物指示点',
+};
+
+const mapConfig = {
+  key: AMAP.key,
+  securityCode: AMAP.securityCode,
+  center: [round6(gcj[0]), round6(gcj[1])],
+  zoom,
+  marker: {
+    name: center.name,
+    gcj: [round6(gcj[0]), round6(gcj[1])],
+    wgs: [round6(center.lng), round6(center.lat)],
+    precision: PRECISION_CN[center.precision ?? ''] ?? '精度未标注',
+    source: center.source ?? '未标注',
+  },
+};
+---
+
+<figure class="geomap" data-geomap data-config={JSON.stringify(mapConfig)}>
+  <div class="geomap__stage">
+    <!-- 占位层：加载中与加载失败时可见，地图就绪后被盖住 -->
+    <div class="geomap__placeholder" data-geomap-placeholder>
+      <Icon name="map" size="1.8rem" />
+      <p class="geomap__ph-title">{center.name}　{round6(center.lat)}, {round6(center.lng)}</p>
+      <p class="geomap__ph-note" data-geomap-status>正在加载高德地图…</p>
+    </div>
+    <!-- 高德地图挂载点，JS 就绪后才显形 -->
+    <div class="geomap__canvas" data-geomap-canvas role="application" aria-label="高德交互地图"></div>
+  </div>
+
+  <div class="geomap__bar">
+    <p class="geomap__coord">
+      <strong>{center.name}</strong>
+      <span class="geomap__pair">WGS84 <code>{round6(center.lat)}, {round6(center.lng)}</code></span>
+      <span class="geomap__pair">GCJ-02 <code>{round6(gcj[1])}, {round6(gcj[0])}</code></span>
+      <span class="geomap__off">两者相差约 {offset} 米</span>
+    </p>
+  </div>
+
+  <figcaption class="geomap__caption">
+    <p>
+      <Icon name="alert" size="0.9em" />
+      地图上<strong>只有「{center.name}」一个本站标记</strong>，它是{PRECISION_CN[center.precision ?? ''] ?? '精度未标注'}，
+      来源为{center.source ?? '未标注'}。
+      沙田半岛、英罗港、丹兜海本站尚无可靠坐标，因此<strong>不在图上打点</strong> ——
+      你在底图上看到的其余名称是高德自己的标注，不是本站的断言。
+    </p>
+    <p class="geomap__datum">
+      本站数据存的是 WGS84，高德用 GCJ-02，上面那 {offset} 米就是两个坐标系的偏移量。
+      直接把 WGS84 填进国内地图而不转换，是这类接入最常见、也最不容易被发现的错误 ——
+      地图照常显示，点稳稳地钉在错误的位置上。
+    </p>
+  </figcaption>
+</figure>
+
+<script>
+  /**
+   * 按需加载高德 JS API v2。
+   *
+   * 每页只加载一次 SDK；多个地图容器共用同一个 Promise。
+   * 任何一步失败都在占位层上写明原因 —— 地图挂了不该让页面开天窗，
+   * 更不该让读者以为"这里本来就没有地图"。坐标与来源始终在图外的文字里。
+   */
+  const AMAP_VERSION = '2.0';
+  let sdk: Promise<any> | null = null;
+
+  function loadAmap(key: string, securityCode: string): Promise<any> {
+    if (sdk) return sdk;
+    sdk = new Promise((resolve, reject) => {
+      if ((window as any).AMap) return resolve((window as any).AMap);
+
+      // **必须在 script 标签之前设置**，否则配置不生效（高德文档明确要求）。
+      // 明文模式：securityJsCode 直接给 SDK。纯静态托管没有服务端能藏它，
+      // 安全性靠高德控制台的域名白名单，不靠保密。
+      (window as any)._AMapSecurityConfig = { securityJsCode: cfg.securityCode };
+
+      const s = document.createElement('script');
+      s.src = `https://webapi.amap.com/maps?v=${AMAP_VERSION}&key=${encodeURIComponent(key)}&plugin=AMap.Scale,AMap.ToolBar`;
+      s.async = true;
+      s.onload = () =>
+        (window as any).AMap
+          ? resolve((window as any).AMap)
+          : reject(new Error('SDK 已加载但 AMap 未定义'));
+      s.onerror = () => reject(new Error('高德 JS API 加载失败'));
+      document.head.appendChild(s);
+    });
+    return sdk;
+  }
+
+  function initOne(root: HTMLElement) {
+    const cfg = JSON.parse(root.dataset.config || '{}');
+    const canvas = root.querySelector<HTMLElement>('[data-geomap-canvas]')!;
+    const status = root.querySelector<HTMLElement>('[data-geomap-status]')!;
+
+    const fail = (msg: string) => {
+      status.textContent = `${msg}。坐标与来源见下方说明。`;
+      root.classList.remove('is-live');
+      root.classList.add('is-failed');
+    };
+
+    loadAmap(cfg.key, cfg.securityCode)
+      .then((AMap: any) => {
+        const map = new AMap.Map(canvas, {
+          zoom: cfg.zoom,
+          center: cfg.center,
+          viewMode: '2D',
+          // 渔港与保护区看的是海岸线形态，卫星底图比矢量图有用得多，
+          // 但卫星图要额外图层，这里先用标准图，保留切换的余地
+          mapStyle: 'amap://styles/normal',
+        });
+
+        map.addControl(new AMap.Scale());
+        map.addControl(new AMap.ToolBar({ position: { top: '12px', right: '12px' } }));
+
+        const m = cfg.marker;
+        const marker = new AMap.Marker({
+          position: m.gcj,
+          title: `${m.name}（${m.precision}）`,
+          anchor: 'bottom-center',
+        });
+        map.add(marker);
+
+        // 信息窗把"这个点是什么、从哪来、原始坐标是多少"一次讲清，
+        // 免得有人把一个镇中心点当成码头坐标抄走
+        const info = new AMap.InfoWindow({
+          isCustom: false,
+          offset: new AMap.Pixel(0, -34),
+          content: `<div style="font-size:13px;line-height:1.7;padding:2px 4px">
+            <strong>${m.name}</strong><br>
+            ${m.precision}<br>
+            GCJ-02 ${m.gcj[1]}, ${m.gcj[0]}<br>
+            WGS84 ${m.wgs[1]}, ${m.wgs[0]}<br>
+            <span style="color:#888">来源：${m.source}</span>
+          </div>`,
+        });
+        marker.on('click', () => info.open(map, marker.getPosition()));
+
+        map.on('complete', () => root.classList.add('is-live'));
+        // 底图久久不 complete 也要收场：多半是密钥代理或网络出了问题
+        setTimeout(() => {
+          if (!root.classList.contains('is-live')) fail('高德底图加载超时');
+        }, 12000);
+      })
+      .catch((e: Error) => fail(e.message));
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-geomap]').forEach(initOne);
+</script>
+
+<style>
+  .geomap {
+    margin: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--bg-raised);
+    overflow: hidden;
+  }
+
+  /* 舞台必须有显式高度：地图容器是绝对定位的，没有高度就是 0，
+     而高德在一个 0 高容器里不报错，只是什么都不显示。 */
+  .geomap__stage {
+    position: relative;
+    height: clamp(300px, 46vw, 440px);
+    background: var(--bg-sunken);
+  }
+
+  .geomap__placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    color: var(--fg-subtle);
+    text-align: center;
+    padding: var(--sp-3);
+  }
+  .geomap.is-live .geomap__placeholder { visibility: hidden; }
+  .geomap__ph-title { margin: 0; font-size: var(--step--1); color: var(--fg-muted); font-family: var(--font-mono); }
+  .geomap__ph-note { margin: 0; font-size: var(--step--1); }
+  .geomap.is-failed .geomap__ph-note { color: var(--warn-fg); }
+
+  .geomap__canvas {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+  .geomap.is-live .geomap__canvas { opacity: 1; pointer-events: auto; }
+
+  .geomap__bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2) var(--sp-3);
+    padding: var(--sp-2) var(--sp-3);
+    border-top: 1px solid var(--line);
+    background: var(--bg-sunken);
+  }
+
+  .geomap__coord {
+    margin: 0;
+    font-size: var(--step--1);
+    color: var(--fg-muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.9rem;
+    align-items: baseline;
+  }
+  .geomap__coord code { font-size: 0.92em; background: var(--bg-raised); }
+  .geomap__off { color: var(--fg-subtle); }
+
+  .geomap__caption {
+    padding: var(--sp-3);
+    border-top: 1px solid var(--line);
+    font-size: var(--step--1);
+    color: var(--fg-muted);
+    line-height: 1.75;
+  }
+  .geomap__caption p + p { margin-top: var(--sp-2); }
+  .geomap__datum { color: var(--fg-subtle); }
+
+  @media (max-width: 34rem) {
+    .geomap__bar { padding: var(--sp-2); }
+  }
+</style>

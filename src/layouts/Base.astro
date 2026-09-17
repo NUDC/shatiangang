@@ -1,0 +1,83 @@
+---
+import BaseHead from '@/components/BaseHead.astro';
+import Header from '@/components/Header.astro';
+import Footer from '@/components/Footer.astro';
+import { SITE } from '@/data/site';
+import '@/styles/global.css';
+
+interface Props {
+  title: string;
+  description: string;
+  path: string;
+  jsonLd?: string;
+  ogType?: 'website' | 'article';
+  image?: string;
+  imageAlt?: string;
+  publishedAt?: Date;
+  updatedAt?: Date;
+  author?: string;
+  keywords?: string[];
+  noindex?: boolean;
+  /** 主题强调色，贯穿该页所有 --accent 派生样式 */
+  accent?: 'sea' | 'pearl' | 'tide' | 'sail' | 'coral' | 'dusk';
+}
+
+const { accent = 'sea', ...head } = Astro.props;
+---
+
+<!doctype html>
+<html lang={SITE.lang} data-accent={accent}>
+  <head>
+    <BaseHead {...head} />
+  </head>
+  <body>
+    <Header />
+    <main id="main">
+      <slot />
+    </main>
+    <Footer />
+
+    <script>
+      /**
+       * 视觉增强层。**只做两件事，都不改内容。**
+       *
+       * 站点的全部正文、标注与结构化数据都在服务端渲染好的 HTML 里 ——
+       * 这段脚本没跑、被禁用、或者爬虫根本不执行 JS，页面内容一个字不少。
+       *
+       * `js-on` 这个类是关键：入场动画的初始态（opacity:0）只在它存在时生效。
+       * 否则一旦 JS 失败，整页内容会停在透明状态，人看不见、而爬虫读得到 ——
+       * 这是滚动动画最常见、也最难自查的一种事故。
+       */
+      document.documentElement.classList.add('js-on');
+
+      // 页头滚动分隔线
+      const header = document.querySelector('.site-header');
+      if (header) {
+        const onScroll = () => header.classList.toggle('is-stuck', window.scrollY > 8);
+        onScroll();
+        addEventListener('scroll', onScroll, { passive: true });
+      }
+
+      // 滚动入场
+      const targets = document.querySelectorAll('.reveal');
+      if (targets.length) {
+        const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (reduce || !('IntersectionObserver' in window)) {
+          targets.forEach((el) => el.classList.add('is-in'));
+        } else {
+          const io = new IntersectionObserver(
+            (entries) => {
+              for (const e of entries) {
+                if (!e.isIntersecting) continue;
+                e.target.classList.add('is-in');
+                io.unobserve(e.target);
+              }
+            },
+            { rootMargin: '0px 0px -12% 0px', threshold: 0.05 }
+          );
+          targets.forEach((el) => io.observe(el));
+        }
+      }
+    </script>
+  </body>
+</html>

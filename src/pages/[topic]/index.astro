@@ -1,0 +1,176 @@
+---
+/** 一级主题页。`place` 主题由 src/pages/place/index.astro 单独承接，此处排除以免路由冲突。 */
+import type { GetStaticPaths } from 'astro';
+import Base from '@/layouts/Base.astro';
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
+import AnswerCard from '@/components/AnswerCard.astro';
+import EntityGraph from '@/components/EntityGraph.astro';
+import Icon from '@/components/Icon.astro';
+import AmapView from '@/components/AmapView.astro';
+import { getTopics, getArticles, getFaqs, fmtDate, type Topic, getMapCenter } from '@/lib/content';
+import * as S from '@/lib/schema';
+import { resolveEntities } from '@/data/site';
+import { render } from 'astro:content';
+import { href } from '@/lib/url';
+
+export const getStaticPaths: GetStaticPaths = async () => {
+  const topics = await getTopics();
+  return topics
+    .filter((t) => t.data.slug !== 'place')
+    .map((topic) => ({ params: { topic: topic.data.slug }, props: { topic } }));
+};
+
+type Props = { topic: Topic };
+const { topic } = Astro.props as Props;
+const d = topic.data;
+const path = `/${d.slug}/`;
+
+const articles = (await getArticles()).filter((a) => a.data.topic === d.slug);
+const faqs = (await getFaqs()).filter((f) =>
+  f.data.entity_tags.some((t) => d.entity_tags.includes(t))
+);
+const { Content } = await render(topic);
+
+const crumbs = [
+  { name: '首页', href: '/' },
+  { name: d.title, href: path },
+];
+
+const jsonLd = S.graph([
+  S.publisher(),
+  S.website(),
+  S.breadcrumb(crumbs),
+  S.webPage({
+    path,
+    title: d.title,
+    description: d.description,
+    datePublished: d.published_at,
+    dateModified: d.updated_at,
+    breadcrumbPath: path,
+    speakableSelectors: ['.answer__text'],
+  }),
+  {
+    '@type': 'CollectionPage',
+    '@id': `${S.abs(path)}#collection`,
+    name: d.title,
+    description: d.description,
+    isPartOf: { '@id': S.abs('/#website') },
+    about: resolveEntities(d.entity_tags).map((e) => ({ '@id': S.entityId(e.id) })),
+    hasPart: articles.map((a) => ({
+      '@type': 'Article',
+      '@id': `${S.abs(`/${d.slug}/${a.id}/`)}#article`,
+      headline: a.data.title,
+      url: S.abs(`/${d.slug}/${a.id}/`),
+    })),
+  },
+  faqs.length > 0 &&
+    S.faqPage(path, faqs.map((f) => ({ question: f.data.question, answer: f.data.answer }))),
+]);
+
+const mapCenter = await getMapCenter();
+---
+
+<Base
+  title={d.title}
+  description={d.description}
+  path={path}
+  jsonLd={jsonLd}
+  accent={d.accent}
+  publishedAt={d.published_at}
+  updatedAt={d.updated_at}
+>
+  <Breadcrumbs items={crumbs} />
+
+  <article class="wrap section">
+    <header class="section-head">
+      <p class="section-head__kicker">
+        <Icon name={d.icon as any} size="0.95em" /> 一级主题 · {d.tagline}
+      </p>
+      <h1>{d.title}</h1>
+    </header>
+
+    {d.answer && <AnswerCard answer={d.answer} updatedAt={d.updated_at} />}
+
+    <div class="prose mt-5" style="max-width:var(--measure)">
+      <Content />
+    </div>
+
+    {/* 海岛与自然：红树林两片区与儒艮保护区的空间关系是这个主题的核心，配图 */}
+    {d.slug === 'island' && (
+      <div class="mt-5">
+        {mapCenter && <AmapView center={mapCenter} zoom={11} />}
+      </div>
+    )}
+
+    <div class="mt-5">
+      <EntityGraph entityIds={d.entity_tags} currentPath={path} />
+    </div>
+  </article>
+
+  <section class="section">
+    <div class="wrap">
+      <header class="section-head">
+        <p class="section-head__kicker">本主题下的专题</p>
+        <h2>{articles.length} 篇</h2>
+      </header>
+
+      {
+        articles.length === 0 ? (
+          <div class="verify-notice">
+            <p class="verify-notice__title">
+              <Icon name="alert" size="1.1em" /> 本主题尚无已发布专题
+            </p>
+            <p>内容正在采编中。本站不用占位文字充数，宁可空着。</p>
+          </div>
+        ) : (
+          <div class="grid-cards">
+            {articles.map((a) => (
+              <a class="card" href={href(`/${d.slug}/${a.id}/`)}>
+                <span class="card__title">{a.data.title}</span>
+                <span class="card__text">{a.data.description}</span>
+                <span class="card__meta">
+                  <Icon name="clock" size="0.9em" />
+                  <span>约 {a.data.reading_time} 分钟</span>
+                  <span>· 更新于 {fmtDate(a.data.updated_at)}</span>
+                  {a.data.unverified.length > 0 && (
+                    <span class="tag tag--warn">{a.data.unverified.length} 项待核实</span>
+                  )}
+                </span>
+              </a>
+            ))}
+          </div>
+        )
+      }
+    </div>
+  </section>
+
+  {
+    faqs.length > 0 && (
+      <section class="section">
+        <div class="wrap">
+          <header class="section-head">
+            <p class="section-head__kicker">相关问答</p>
+            <h2>关于{d.title}的常见问题</h2>
+          </header>
+          <div class="grid-2">
+            {faqs.map((f) => (
+              <div class="faq-item">
+                <h3 id={f.id}>{f.data.question}</h3>
+                <p>{f.data.answer}</p>
+                {f.data.read_more.length > 0 && (
+                  <p class="faq-item__more">
+                    {f.data.read_more.map((r) => (
+                      <a class="tag" href={href(r.href)}>
+                        <Icon name="arrow" size="0.8em" /> {r.label}
+                      </a>
+                    ))}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+</Base>

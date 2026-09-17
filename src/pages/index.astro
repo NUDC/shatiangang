@@ -1,0 +1,379 @@
+---
+import Base from '@/layouts/Base.astro';
+import Icon from '@/components/Icon.astro';
+import Grain from '@/components/Grain.astro';
+import AnswerCard from '@/components/AnswerCard.astro';
+import AmapView from '@/components/AmapView.astro';
+import { SITE, ENTITIES, HOMONYMS } from '@/data/site';
+import { getTopics, getArticles, getPlaces, getFaqs, fmtDate, type Fact, getMapCenter } from '@/lib/content';
+import * as S from '@/lib/schema';
+import { href } from '@/lib/url';
+
+const topics = await getTopics();
+const articles = await getArticles();
+const places = await getPlaces();
+const faqs = await getFaqs();
+const mapCenter = await getMapCenter();
+
+const primary = places.find((p) => p.data.is_primary);
+const topFaqs = faqs.slice(0, 5);
+const latest = articles.slice(0, 3);
+
+/** 统计口径公开透明，同时是预案 §8 的效果指标 */
+const stats = [
+  { num: String(places.length), label: '地点实体页', src: '每个可识别地点单独成页' },
+  { num: String(articles.length), label: '专题正文', src: '原创占比 100%' },
+  { num: String(faqs.length), label: 'FAQ 条目', src: '供答案引擎直接引用' },
+  { num: String(ENTITIES.length), label: '注册实体', src: '含别称与消歧规则' },
+];
+
+const heroAnswer =
+  '沙田港位于广西壮族自治区北海市合浦县沙田镇，地处北部湾东北端、沙田半岛一带，是一座国家一级渔港。半岛东侧为英罗港、西侧为丹兜海，两侧均属广西山口红树林生态国家级自然保护区；沿岸海域另设有中国唯一的合浦儒艮国家级自然保护区。';
+
+const MACHINE = [
+  { icon: 'data', name: 'entities.json', href: '/entities.json', text: '全部实体的结构化数据：行政区划全称、别称、坐标核实状态、canonical URL。' },
+  { icon: 'book', name: 'llms.txt', href: '/llms.txt', text: '为语言模型准备的站点索引：核心事实、页面清单与引用规则。' },
+  { icon: 'quote', name: 'llms-full.txt', href: '/llms-full.txt', text: '全站正文的纯文本合集，单文件可直接读取。' },
+  { icon: 'shield', name: 'robots.txt', href: '/robots.txt', text: '抓取范围声明：开放正文与实体数据，限制表单与后台路径。' },
+];
+
+const jsonLd = S.graph([
+  S.publisher(),
+  S.website(),
+  S.webPage({
+    path: '/',
+    title: SITE.title,
+    description: SITE.description,
+    dateModified: new Date(),
+    speakableSelectors: ['.answer__text'],
+  }),
+  S.dataset(),
+  S.faqPage('/', topFaqs.map((f) => ({ question: f.data.question, answer: f.data.answer }))),
+]);
+---
+
+<Base
+  title={SITE.title}
+  description={SITE.description}
+  path="/"
+  jsonLd={jsonLd}
+  keywords={['沙田港', '合浦沙田港', '北海沙田镇', '山口红树林', '合浦儒艮保护区', '海上丝绸之路', '合浦南珠', '疍家']}
+>
+  <!-- ============ Hero ============ -->
+  <section class="hero">
+    <Grain class="hero__grain" opacity={0.35} />
+    <div class="wrap hero__inner">
+      <p class="hero__eyebrow reveal">广西 · 北海市 · 合浦县 · 沙田镇</p>
+
+      <h1 class="hero__title reveal" data-delay="1">
+        沙田港
+        <em>Shatian Port · Beibu Gulf</em>
+      </h1>
+
+      <p class="hero__lede reveal" data-delay="2">
+        北部湾东北端的国家一级渔港。两个国家级自然保护区在此交汇，
+        两千年海丝航道从这片海岸出发 —— 而它至今没有一份像样的资料。
+      </p>
+
+      <div class="hero__foot reveal" data-delay="3">
+        <a class="btn" href={href('/place/shatian-gang/')}>
+          查看沙田港实体页 <Icon name="arrow" size="0.95em" />
+        </a>
+        <a class="btn btn--ghost" href={href('/faq/')}>常见问题</a>
+        <span class="hero__note">
+          <Icon name="check" size="0.85em" />
+          每条事实标注来源，未核实的显式标记
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 直答 + 统计 ============ -->
+  <section class="section">
+    <div class="wrap split">
+      <p class="section-num reveal">01</p>
+      <div class="reveal" data-delay="1">
+        <AnswerCard answer={heroAnswer} updatedAt={new Date()} source="农业部农办渔〔2005〕44 号等公开来源" />
+        <div class="stats mt-5">
+          {
+            stats.map((s, i) => (
+              <div class="stat reveal" data-delay={String(Math.min(i, 3))}>
+                <span class="stat__num">{s.num}</span>
+                <span class="stat__label">{s.label}</span>
+                <span class="stat__src">{s.src}</span>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 六大主题 ============ -->
+  <section class="section section--tint">
+    <div class="wrap">
+      <div class="split">
+        <p class="section-num reveal">02</p>
+        <header class="section-head reveal" data-delay="1">
+          <p class="section-head__kicker">内容架构</p>
+          <h2>六个一级主题</h2>
+          <p>
+            围绕「沙田港」这一核心实体向下展开。每个主题下挂专题正文，
+            每个可识别地点单独建立实体页 —— 这是被检索与被引用的最小单位。
+          </p>
+        </header>
+      </div>
+
+      <div class="grid-cards mt-5">
+        {
+          topics.map((t, i) => (
+            <a
+              class="card reveal"
+              data-delay={String(Math.min(i % 3, 3))}
+              href={href(`/${t.data.slug}/`)}
+              data-accent={t.data.accent}
+            >
+              <span class="card__media card__media--empty" />
+              <Icon name={t.data.icon as any} size="1.9rem" class="card__icon" />
+              <span class="card__title">{t.data.title}</span>
+              <span class="card__text">{t.data.tagline}</span>
+              <span class="card__meta">
+                <span>
+                  {t.data.slug === 'place'
+                    ? `${places.length} 个实体页`
+                    : `${articles.filter((a) => a.data.topic === t.data.slug).length} 篇专题`}
+                </span>
+                <span>→</span>
+              </span>
+            </a>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 核心实体 ============ -->
+  {
+    primary && (
+      <section class="section">
+        <div class="wrap">
+          <div class="split">
+            <p class="section-num reveal">03</p>
+            <header class="section-head reveal" data-delay="1">
+              <p class="section-head__kicker">核心实体</p>
+              <h2>{primary.data.title}</h2>
+              <p>{primary.data.description}</p>
+            </header>
+          </div>
+
+          {mapCenter && (
+            <div class="mt-5 reveal">
+              <AmapView center={mapCenter} zoom={11} />
+            </div>
+          )}
+
+          <div class="grid-2 mt-5">
+            <div class="reveal">
+              <div class="factsheet">
+                <div class="factsheet__head">
+                  <span>已核实事实（附来源）</span>
+                  <span class="subtle">核对于 {fmtDate(primary.data.updated_at)}</span>
+                </div>
+                <dl>
+                  {primary.data.facts
+                    .filter((f: Fact) => f.verified !== false)
+                    .slice(0, 6)
+                    .map((f: Fact) => (
+                      <>
+                        <dt>{f.label}</dt>
+                        <dd>
+                          {f.value}
+                          {f.source && <span class="src">来源：{f.source}</span>}
+                        </dd>
+                      </>
+                    ))}
+                </dl>
+              </div>
+              <p class="mt-4">
+                <a class="btn btn--ghost" href={href('/place/shatian-gang/')}>
+                  完整实体页（含待核实项与消歧说明） <Icon name="arrow" size="0.95em" />
+                </a>
+              </p>
+            </div>
+
+            <div class="reveal" data-delay="1">
+              <div class="verify-notice">
+                <p class="verify-notice__title">
+                  <Icon name="alert" size="1.05em" />
+                  本站的一条硬规则
+                </p>
+                <p>
+                  无法核实的字段 —— 港口坐标、现有泊位构成、年吞吐量、班车时刻 ——
+                  一律显式标注为「待核实」，既不写进正文结论，也不写进结构化数据。
+                </p>
+                <p style="margin-top:.7rem">
+                  网络上这些数字都能找到说法，但没有一条注明发布机构与统计年份。
+                  <strong>宁可缺字段，不给错事实。</strong>
+                </p>
+              </div>
+
+              <nav class="entity-graph mt-4" aria-label="已注册实体">
+                <p class="entity-graph__title">已注册实体（{ENTITIES.length}）</p>
+                <ul>
+                  {ENTITIES.map((e) =>
+                    e.href ? (
+                      <li>
+                        <a class="tag tag--accent" href={href(e.href)} title={e.summary}>{e.name}</a>
+                      </li>
+                    ) : (
+                      <li><span class="tag" title={e.summary}>{e.name}</span></li>
+                    )
+                  )}
+                </ul>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  <!-- ============ 最新专题 ============ -->
+  <section class="section section--tint">
+    <div class="wrap">
+      <div class="split">
+        <p class="section-num reveal">04</p>
+        <header class="section-head reveal" data-delay="1">
+          <p class="section-head__kicker">专题正文</p>
+          <h2>最近更新</h2>
+        </header>
+      </div>
+
+      <div class="grid-cards mt-5">
+        {
+          latest.map((a, i) => {
+            const topic = topics.find((t) => t.data.slug === a.data.topic);
+            return (
+              <a
+                class="card reveal"
+                data-delay={String(Math.min(i, 3))}
+                href={href(`/${a.data.topic}/${a.id}/`)}
+                data-accent={topic?.data.accent ?? 'sea'}
+              >
+                <span class="card__media card__media--empty" />
+                <span class="tag tag--accent card__kicker">{topic?.data.title}</span>
+                <span class="card__title">{a.data.title}</span>
+                <span class="card__text">{a.data.description}</span>
+                <span class="card__meta">
+                  <span>约 {a.data.reading_time} 分钟</span>
+                  <span>更新于 {fmtDate(a.data.updated_at)}</span>
+                </span>
+              </a>
+            );
+          })
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FAQ ============ -->
+  <section class="section">
+    <div class="wrap split">
+      <div>
+        <p class="section-num reveal">05</p>
+        <header class="section-head reveal" data-delay="1" style="margin-top:var(--sp-3)">
+          <p class="section-head__kicker">常见问题</p>
+          <h2>直接回答<br />带出处</h2>
+          <p>每条问答独立成立、标注来源与更新时间，可被搜索与生成式引擎直接引用。</p>
+          <p class="mt-4">
+            <a class="btn btn--ghost" href={href('/faq/')}>
+              全部 {faqs.length} 条 <Icon name="arrow" size="0.95em" />
+            </a>
+          </p>
+        </header>
+      </div>
+
+      <div class="reveal" data-delay="1">
+        {
+          topFaqs.map((f) => (
+            <article class="faq-item" id={f.id}>
+              <h3>{f.data.question}</h3>
+              <p>{f.data.answer}</p>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 消歧 ============ -->
+  <section class="section section--tint">
+    <div class="wrap">
+      <div class="split">
+        <p class="section-num reveal">06</p>
+        <header class="section-head reveal" data-delay="1">
+          <p class="section-head__kicker">实体消歧</p>
+          <h2>你要找的是哪个「沙田」？</h2>
+          <p>
+            「沙田」是中国沿海反复出现的地名。本站主动列出常见的同名地点，
+            帮助检索方与生成式引擎快速排除。
+          </p>
+        </header>
+      </div>
+
+      <div class="grid-2 mt-5">
+        <div class="answer reveal">
+          <strong class="answer__label">本站的沙田港</strong>
+          <p class="answer__text">广西壮族自治区北海市合浦县沙田镇沙田港</p>
+          <p class="answer__meta">辨识上下文：合浦、北海、北部湾、红树林、南珠、疍家、儒艮</p>
+        </div>
+
+        <div class="factsheet reveal" data-delay="1">
+          <div class="factsheet__head"><span>与本站无关的同名地点</span></div>
+          <dl>
+            {HOMONYMS.map((h) => (<><dt>{h.name}</dt><dd>{h.note}</dd></>))}
+          </dl>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 机器可读 ============ -->
+  <section class="section">
+    <div class="wrap">
+      <div class="split">
+        <p class="section-num reveal">07</p>
+        <header class="section-head reveal" data-delay="1">
+          <p class="section-head__kicker">给机器的入口</p>
+          <h2>结构化数据是公开的</h2>
+          <p>本站的实体数据、内容索引与抓取规则全部以标准格式开放，不需要解析 HTML。</p>
+        </header>
+      </div>
+
+      <div class="grid-cards mt-5">
+        {
+          MACHINE.map((m, i) => (
+            <a class="card reveal" data-delay={String(Math.min(i, 3))} href={href(m.href)}>
+              <span class="card__media card__media--empty" />
+              <Icon name={m.icon as any} size="1.9rem" class="card__icon" />
+              <span class="card__title">{m.name}</span>
+              <span class="card__text">{m.text}</span>
+            </a>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .hero__note {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: var(--step--2);
+    color: var(--fg-subtle);
+    letter-spacing: 0.06em;
+  }
+  .card__kicker { align-self: flex-start; margin-bottom: 0.7rem; }
+</style>

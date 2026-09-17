@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0d3550"/>
+      <stop offset="60%" stop-color="#082438"/>
+      <stop offset="100%" stop-color="#061019"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3f8fbf" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#3f8fbf" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <ellipse cx="240" cy="60" rx="620" ry="380" fill="url(#glow)"/>
+
+  <!-- 锚 -->
+  <g transform="translate(92 96)" fill="none" stroke="#e3d9c4" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity="0.9">
+    <path d="M30 78V26"/>
+    <circle cx="30" cy="13" r="12"/>
+    <path d="M9 44H0a30 30 0 0 0 60 0h-9"/>
+  </g>
+
+  <text x="92" y="268" font-family="Noto Serif SC, Songti SC, SimSun, serif" font-size="108" font-weight="700" fill="#f6f2e9">沙田港</text>
+  <text x="92" y="336" font-family="Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif" font-size="34" fill="#a9d2ea">广西壮族自治区 · 北海市 · 合浦县 · 沙田镇</text>
+
+  <line x1="92" y1="380" x2="1108" y2="380" stroke="#1c5f88" stroke-width="2"/>
+
+  <g font-family="Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif" font-size="27" fill="#d5e9f5">
+    <text x="92" y="434">国家一级渔港　·　山口红树林国家级自然保护区　·　合浦儒艮国家级自然保护区</text>
+    <text x="92" y="480">海上丝绸之路始发港合浦　·　南珠采珠史　·　疍家渔港文化</text>
+  </g>
+
+  <text x="92" y="556" font-family="Noto Sans SC, PingFang SC, Microsoft YaHei, sans-serif" font-size="24" fill="#93a5b1">
+    每条事实标注来源　·　无法核实的字段显式标记为「待核实」
+  </text>
+
+  <!-- 浪线 -->
+  <path d="M0 596c100-20 200-20 300 0s200 20 300 0 200-20 300 0 200 20 300 0v34H0Z" fill="#1c5f88" opacity="0.5"/>
+  <path d="M0 612c150-14 300-14 450 0s300 14 450 0 200-10 300 0v18H0Z" fill="#3f8fbf" opacity="0.35"/>
+</svg>

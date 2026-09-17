@@ -1,0 +1,136 @@
+---
+/** 地点实体索引页。内容取自 topics 集合里的 `place` 条目，保持主题定义单一来源。 */
+import Base from '@/layouts/Base.astro';
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
+import AnswerCard from '@/components/AnswerCard.astro';
+import Icon from '@/components/Icon.astro';
+import AmapView from '@/components/AmapView.astro';
+import { getTopics, getPlaces, fmtDate, type Fact, getMapCenter } from '@/lib/content';
+import { HOMONYMS } from '@/data/site';
+import * as S from '@/lib/schema';
+import { render } from 'astro:content';
+import { href } from '@/lib/url';
+
+const topic = (await getTopics()).find((t) => t.data.slug === 'place')!;
+const d = topic.data;
+const places = await getPlaces();
+const { Content } = await render(topic);
+const path = '/place/';
+
+const crumbs = [
+  { name: '首页', href: '/' },
+  { name: '地点实体', href: path },
+];
+
+const jsonLd = S.graph([
+  S.publisher(),
+  S.website(),
+  S.breadcrumb(crumbs),
+  S.webPage({
+    path,
+    title: d.title,
+    description: d.description,
+    datePublished: d.published_at,
+    dateModified: d.updated_at,
+    breadcrumbPath: path,
+    speakableSelectors: ['.answer__text'],
+  }),
+  {
+    '@type': 'ItemList',
+    '@id': `${S.abs(path)}#list`,
+    name: '沙田港地点实体索引',
+    numberOfItems: places.length,
+    itemListElement: places.map((p, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: p.data.title,
+      item: S.abs(`/place/${p.id}/`),
+    })),
+  },
+]);
+
+const mapCenter = await getMapCenter();
+---
+
+<Base
+  title={d.title}
+  description={d.description}
+  path={path}
+  jsonLd={jsonLd}
+  accent={d.accent}
+  publishedAt={d.published_at}
+  updatedAt={d.updated_at}
+>
+  <Breadcrumbs items={crumbs} />
+
+  <article class="wrap section">
+    <header class="section-head">
+      <p class="section-head__kicker">
+        <Icon name="map" size="0.95em" /> 一级主题 · {d.tagline}
+      </p>
+      <h1>{d.title}</h1>
+    </header>
+
+    {d.answer && <AnswerCard answer={d.answer} updatedAt={d.updated_at} />}
+
+    <div class="prose mt-5" style="max-width:var(--measure)">
+      <Content />
+    </div>
+
+    <div class="mt-5">
+      {mapCenter && <AmapView center={mapCenter} zoom={11} />}
+    </div>
+  </article>
+
+  <section class="section">
+    <div class="wrap">
+      <header class="section-head">
+        <p class="section-head__kicker">实体清单</p>
+        <h2>{places.length} 个地点实体页</h2>
+      </header>
+
+      <div class="grid-cards">
+        {
+          places.map((p) => {
+            const hasGeo = p.data.geo.lat !== null && p.data.geo.lng !== null;
+            const unverifiedCount = p.data.facts.filter((f: Fact) => f.verified === false).length;
+            return (
+              <a class="card" href={href(`/place/${p.id}/`)}>
+                <span class="tag tag--accent">
+                  <Icon name="map" size="0.8em" /> {p.data.place_type}
+                </span>
+                <span class="card__title">
+                  {p.data.title}
+                  {p.data.is_primary && <span class="tag" style="margin-left:.4rem">核心实体</span>}
+                </span>
+                <span class="card__text">{p.data.description}</span>
+                <span class="card__meta">
+                  <span class="tag">{hasGeo ? '坐标已核实' : '坐标待核实'}</span>
+                  {unverifiedCount > 0 && (
+                    <span class="tag tag--warn">{unverifiedCount} 项待核实</span>
+                  )}
+                  <span>· 更新于 {fmtDate(p.data.updated_at)}</span>
+                </span>
+              </a>
+            );
+          })
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <header class="section-head">
+        <p class="section-head__kicker">实体消歧</p>
+        <h2>与本站无关的同名地点</h2>
+        <p>主动列出，帮助检索方与生成式引擎快速排除误匹配。</p>
+      </header>
+      <div class="factsheet" style="max-width:var(--measure)">
+        <dl>
+          {HOMONYMS.map((h) => (<><dt>{h.name}</dt><dd>{h.note}</dd></>))}
+        </dl>
+      </div>
+    </div>
+  </section>
+</Base>

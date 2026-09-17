@@ -1,0 +1,137 @@
+---
+/**
+ * FAQ 总页 —— AEO 主阵地
+ * 每条问答独立成立、可被单独引用，锚点稳定（#id），便于外部深链。
+ */
+import Base from '@/layouts/Base.astro';
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
+import SourceList from '@/components/SourceList.astro';
+import Icon from '@/components/Icon.astro';
+import { getFaqs, fmtDate } from '@/lib/content';
+import * as S from '@/lib/schema';
+import { href } from '@/lib/url';
+
+const faqs = await getFaqs();
+const path = '/faq/';
+
+/** 按 group 分组，保持 order 内的顺序 */
+const groups = faqs.reduce<Record<string, typeof faqs>>((acc, f) => {
+  (acc[f.data.group] ??= []).push(f);
+  return acc;
+}, {});
+
+const crumbs = [
+  { name: '首页', href: '/' },
+  { name: '常见问题', href: path },
+];
+
+const title = '沙田港常见问题解答';
+const description =
+  `关于沙田港的 ${faqs.length} 个常见问题：位置、港口等级、同名地点区分、红树林与儒艮保护区、海丝与南珠历史、交通与安全提示。每条附来源与更新时间，无可靠来源的一律标注待核实。`;
+
+const jsonLd = S.graph([
+  S.publisher(),
+  S.website(),
+  S.breadcrumb(crumbs),
+  S.webPage({
+    path,
+    title,
+    description,
+    dateModified: new Date(),
+    breadcrumbPath: path,
+    speakableSelectors: ['.faq-item p'],
+  }),
+  S.faqPage(path, faqs.map((f) => ({ question: f.data.question, answer: f.data.answer }))),
+]);
+---
+
+<Base
+  title={title}
+  description={description}
+  path={path}
+  jsonLd={jsonLd}
+  accent="sea"
+  keywords={faqs.slice(0, 10).map((f) => f.data.question)}
+>
+  <Breadcrumbs items={crumbs} />
+
+  <section class="wrap section">
+    <header class="section-head">
+      <p class="section-head__kicker">答案引擎优化 · AEO</p>
+      <h1>常见问题</h1>
+      <p>
+        共 {faqs.length} 条。每条问答<strong>脱离上下文也能独立成立</strong>，标注来源与更新时间，
+        并带稳定锚点便于外部深链引用。无可靠来源的一律标注「待核实」，不编造答案。
+      </p>
+    </header>
+
+    <nav class="entity-graph" aria-label="问答分组导航">
+      <p class="entity-graph__title">按分组跳转</p>
+      <ul>
+        {
+          Object.entries(groups).map(([group, items]) => (
+            <li>
+              <a class="tag tag--accent" href={`#${encodeURIComponent(group)}`}>
+                {group}（{items.length}）
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    {
+      Object.entries(groups).map(([group, items]) => (
+        <section class="mt-5">
+          <h2 id={group} style="scroll-margin-top:5rem">{group}</h2>
+          <div class="stack mt-4">
+            {items.map((f) => (
+              <article class="faq-item" id={f.id}>
+                <h3>
+                  <a href={`#${f.id}`} style="text-decoration:none;color:inherit">{f.data.question}</a>
+                </h3>
+                <p>{f.data.answer}</p>
+
+                {f.data.unverified.length > 0 && (
+                  <p class="faq-item__more">
+                    {f.data.unverified.map((u) => (
+                      <span class="tag tag--warn">
+                        <Icon name="alert" size="0.8em" /> {u.field}：{u.note}
+                      </span>
+                    ))}
+                  </p>
+                )}
+
+                <p class="faq-item__more">
+                  {f.data.read_more.map((r) => (
+                    <a class="tag" href={href(r.href)}>
+                      <Icon name="arrow" size="0.8em" /> {r.label}
+                    </a>
+                  ))}
+                  <span class="tag subtle">更新于 {fmtDate(f.data.updated_at)}</span>
+                </p>
+
+                {f.data.citations.length > 0 && (
+                  <div style="margin-top:var(--sp-2)">
+                    <SourceList citations={f.data.citations} as="h4" label="本条来源" />
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+        </section>
+      ))
+    }
+
+    <div class="verify-notice mt-5" style="max-width:var(--measure)">
+      <p class="verify-notice__title">
+        <Icon name="alert" size="1.1em" /> 没有找到你的问题？
+      </p>
+      <p>
+        本站会持续补充问答。如果你有关于沙田港的问题没在这里找到答案，
+        或发现某条答案已经过时，欢迎通过<a href={href("/contribute/")}>投稿通道</a>告诉我们 ——
+        提问本身就是最有价值的内容线索。
+      </p>
+    </div>
+  </section>
+</Base>

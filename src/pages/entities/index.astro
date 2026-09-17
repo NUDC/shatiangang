@@ -1,0 +1,167 @@
+---
+/**
+ * 实体索引页
+ *
+ * 全站 JSON-LD 的实体 @id 都指向本页的片段标识（/entities/#shatian-gang），
+ * 因此本页必须真实存在且逐个实体带有对应 id 的可见区块 ——
+ * 标注与页面内容一致，是结构化数据不被判为垃圾标记的前提。
+ */
+import Base from '@/layouts/Base.astro';
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
+import Icon from '@/components/Icon.astro';
+import { ENTITIES, HOMONYMS, SITE } from '@/data/site';
+import { contentForEntity } from '@/lib/content';
+import * as S from '@/lib/schema';
+import { href, BASE } from '@/lib/url';
+
+const path = '/entities/';
+const crumbs = [
+  { name: '首页', href: '/' },
+  { name: '实体索引', href: path },
+];
+
+const KIND_LABEL: Record<string, string> = {
+  place: '地点',
+  admin: '行政区划',
+  nature: '自然与生态',
+  history: '历史',
+  culture: '文化',
+  product: '物产',
+};
+
+/** 每个实体挂多少内容 —— 直接反映预案 §8 的「实体页覆盖率」 */
+const rows = await Promise.all(
+  ENTITIES.map(async (e) => ({ entity: e, content: await contentForEntity(e.id) }))
+);
+
+const title = '沙田港实体索引';
+const description =
+  `本站注册的 ${ENTITIES.length} 个实体：沙田港、沙田镇、沙田半岛、英罗港、丹兜海、山口红树林保护区、合浦儒艮保护区、合浦南珠、疍家等。每个实体含行政区划全称、别称、canonical URL 与关联内容，是全站结构化数据的 @id 锚点。`;
+
+const jsonLd = S.graph([
+  S.publisher(),
+  S.website(),
+  S.breadcrumb(crumbs),
+  S.webPage({ path, title, description, dateModified: new Date(), breadcrumbPath: path }),
+  S.dataset(),
+  {
+    '@type': 'ItemList',
+    '@id': `${S.abs(path)}#list`,
+    name: title,
+    numberOfItems: ENTITIES.length,
+    itemListElement: ENTITIES.map((e, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: e.name,
+      item: S.entityId(e.id),
+    })),
+  },
+  // 实体节点本体：其他页面通过 @id 引用它们
+  ...ENTITIES.map((e) => ({
+    '@type': 'Thing',
+    '@id': S.entityId(e.id),
+    name: e.name,
+    alternateName: e.altNames,
+    description: e.summary,
+    url: e.href ? S.abs(e.href) : S.abs(path),
+    sameAs: e.sameAs,
+  })),
+]);
+---
+
+<Base title={title} description={description} path={path} jsonLd={jsonLd} accent="dusk">
+  <Breadcrumbs items={crumbs} />
+
+  <section class="wrap section">
+    <header class="section-head">
+      <p class="section-head__kicker">生成式引擎优化 · GEO</p>
+      <h1>实体索引</h1>
+      <p>
+        本站注册了 {ENTITIES.length} 个实体。全站结构化数据中的实体标识都指向本页的锚点，
+        例如沙田港的稳定 <code>@id</code> 是 <code>{SITE.url}{BASE}/entities/#shatian-gang</code>。
+        同一实体在任何页面出现，都复用同一个标识 —— 这是实体关系图谱能被拼起来的前提。
+      </p>
+      <p class="mt-4">
+        <a class="btn btn--ghost" href={href("/entities.json")}>
+          <Icon name="data" size="0.9em" /> 取结构化数据（JSON）
+        </a>
+      </p>
+    </header>
+
+    <div class="stack-lg">
+      {
+        rows.map(({ entity: e, content }) => {
+          const total = content.articles.length + content.places.length + content.faqs.length;
+          return (
+            <article class="factsheet" id={e.id} style="scroll-margin-top:5rem">
+              <div class="factsheet__head">
+                <span>
+                  <strong>{e.name}</strong>
+                  <span class="subtle"> · {KIND_LABEL[e.kind] ?? e.kind}</span>
+                </span>
+                <span class="subtle">
+                  <code>#{e.id}</code>
+                </span>
+              </div>
+              <dl>
+                <dt>说明</dt>
+                <dd>{e.summary}</dd>
+
+                {e.adminFull && (<><dt>行政区划全称</dt><dd>{e.adminFull}</dd></>)}
+
+                {e.altNames && e.altNames.length > 0 && (
+                  <><dt>别称 / 旧称</dt><dd>{e.altNames.join('、')}</dd></>
+                )}
+
+                <dt>canonical URL</dt>
+                <dd>
+                  {e.href ? (
+                    <a href={href(e.href)}>{SITE.url}{BASE}{e.href}</a>
+                  ) : (
+                    <span class="subtle">尚未建立独立实体页</span>
+                  )}
+                </dd>
+
+                {e.sameAs && e.sameAs.length > 0 && (
+                  <>
+                    <dt>外部标识（sameAs）</dt>
+                    <dd>
+                      {e.sameAs.map((u) => (
+                        <a href={u} rel="nofollow noopener" target="_blank" style="display:block">{u}</a>
+                      ))}
+                    </dd>
+                  </>
+                )}
+
+                <dt>关联内容</dt>
+                <dd>
+                  {total === 0 ? (
+                    <span class="tag tag--warn">
+                      <Icon name="alert" size="0.8em" /> 暂无关联内容
+                    </span>
+                  ) : (
+                    <span style="display:flex;gap:.4rem;flex-wrap:wrap">
+                      {content.places.length > 0 && <span class="tag">{content.places.length} 个实体页</span>}
+                      {content.articles.length > 0 && <span class="tag">{content.articles.length} 篇专题</span>}
+                      {content.faqs.length > 0 && <span class="tag">{content.faqs.length} 条问答</span>}
+                    </span>
+                  )}
+                </dd>
+              </dl>
+            </article>
+          );
+        })
+      }
+    </div>
+
+    <section class="mt-5">
+      <h2>消歧登记</h2>
+      <p class="muted">以下同名地点与本站实体无关，主动登记以降低误匹配。</p>
+      <div class="factsheet mt-4" style="max-width:var(--measure)">
+        <dl>
+          {HOMONYMS.map((h) => (<><dt>{h.name}</dt><dd>{h.note}</dd></>))}
+        </dl>
+      </div>
+    </section>
+  </section>
+</Base>

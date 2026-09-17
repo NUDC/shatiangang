@@ -1,0 +1,58 @@
+---
+/** 法律文本页（预案 §9）。noindex：法务页不需要索引，也不进 sitemap。 */
+import type { GetStaticPaths } from 'astro';
+import Base from '@/layouts/Base.astro';
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import { fmtDateCN } from '@/lib/content';
+import * as S from '@/lib/schema';
+
+export const getStaticPaths: GetStaticPaths = async () => {
+  const docs = await getCollection('legal');
+  return docs.map((doc) => ({ params: { slug: doc.id }, props: { doc } }));
+};
+
+type Props = { doc: CollectionEntry<'legal'> };
+const { doc } = Astro.props as Props;
+const d = doc.data;
+const path = `/legal/${doc.id}/`;
+const { Content } = await render(doc);
+
+const crumbs = [
+  { name: '首页', href: '/' },
+  { name: '合规与协议', href: '/about/' },
+  { name: d.title, href: path },
+];
+
+const jsonLd = S.graph([
+  S.publisher(),
+  S.breadcrumb(crumbs),
+  S.webPage({ path, title: d.title, description: d.description, dateModified: d.updated_at, breadcrumbPath: path }),
+]);
+---
+
+<Base
+  title={d.title}
+  description={d.description}
+  path={path}
+  jsonLd={jsonLd}
+  updatedAt={d.updated_at}
+  noindex
+>
+  <Breadcrumbs items={crumbs} />
+
+  <article class="wrap section">
+    <header style="width:min(100%,var(--measure))">
+      <p class="section-head__kicker">法律文本</p>
+      <h1>{d.title}</h1>
+      <p class="muted mt-4">{d.description}</p>
+      <p class="small subtle" style="margin-top:var(--sp-2)">
+        最后更新：{fmtDateCN(d.updated_at)}
+      </p>
+    </header>
+
+    <div class="prose mt-5" style="width:min(100%,var(--measure))">
+      <Content />
+    </div>
+  </article>
+</Base>

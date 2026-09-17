@@ -1,0 +1,74 @@
+---
+import { SITE, NAV } from '@/data/site';
+import { getCollection } from 'astro:content';
+import { href } from '@/lib/url';
+
+const legal = (await getCollection('legal')).sort((a, b) => a.data.order - b.data.order);
+const year = new Date(SITE.founded).getFullYear();
+const thisYear = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="site-footer__mark">北部湾沙田港</p>
+
+    <div class="site-footer__cols">
+      <div>
+        <h2>关于本站</h2>
+        <p>
+          个人运营的北部湾沙田港资料站。所有内容标注来源与更新时间，
+          无法核实的字段明确标记为「待核实」而非编造。
+        </p>
+        <p class="mt-4"><a href={href('/about/')}>站点说明与编辑方针</a></p>
+      </div>
+
+      <div>
+        <h2>内容主题</h2>
+        <ul>{NAV.map((n) => <li><a href={href(n.href)}>{n.label}</a></li>)}</ul>
+      </div>
+
+      <div>
+        <h2>机器可读接口</h2>
+        <ul>
+          <li><a href={href('/entities/')}>实体索引</a></li>
+          <li><a href={href('/entities.json')}>实体数据集 JSON</a></li>
+          <li><a href={href('/llms.txt')}>llms.txt</a></li>
+          <li><a href={href('/llms-full.txt')}>llms-full.txt</a></li>
+          <li><a href={href('/sitemap-index.xml')}>sitemap.xml</a></li>
+          <li><a href={href('/rss.xml')}>RSS</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h2>合规与协议</h2>
+        <ul>
+          {legal.map((l) => <li><a href={href(`/legal/${l.id}/`)}>{l.data.title}</a></li>)}
+          <li><a href={href('/contribute/')}>投稿与授权</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="site-footer__legal">
+      <span>
+        © {year === thisYear ? year : `${year}–${thisYear}`} {SITE.name}。
+        本站原创内容依《版权声明》使用；授权内容版权归原作者。
+      </span>
+      <span>
+        <a href="https://beian.miit.gov.cn/" rel="nofollow noopener" target="_blank">{SITE.icp}</a>
+      </span>
+    </div>
+  </div>
+</footer>
+
+<style>
+  /* 页脚顶部的超大站名：参考站里常见的收尾记号，也把深色页脚的高度撑住 */
+  .site-footer__mark {
+    font-family: var(--font-serif);
+    font-size: clamp(3rem, 12vw, 9rem);
+    line-height: 0.85;
+    letter-spacing: -0.05em;
+    color: color-mix(in srgb, var(--fg-invert) 12%, transparent);
+    margin-bottom: var(--sp-6);
+    user-select: none;
+  }
+</style>

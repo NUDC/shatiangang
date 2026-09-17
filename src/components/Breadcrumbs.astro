@@ -1,0 +1,22 @@
+---
+import { href } from '@/lib/url';
+/** 面包屑。视觉导航 + BreadcrumbList 结构化数据的可见对应物（标注必须与页面一致）。 */
+interface Props {
+  items: { name: string; href: string }[];
+}
+const { items } = Astro.props;
+---
+
+<nav class="crumbs wrap" aria-label="面包屑导航">
+  <ol>
+    {
+      items.map((item, i) =>
+        i === items.length - 1 ? (
+          <li aria-current="page">{item.name}</li>
+        ) : (
+          <li><a href={href(item.href)}>{item.name}</a></li>
+        )
+      )
+    }
+  </ol>
+</nav>

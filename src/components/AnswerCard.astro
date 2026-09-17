@@ -1,0 +1,34 @@
+---
+/**
+ * AEO 直答块 —— 全站最重要的一个组件。
+ *
+ * 答案引擎抓一个页面时，真正会被摘出来引用的通常只有一段。
+ * 这段必须：置于正文最前、语义自足（脱离上下文也成立）、带更新时间。
+ * data-speakable 供 JSON-LD 的 SpeakableSpecification 定位。
+ */
+import { fmtDateCN } from '@/lib/content';
+
+interface Props {
+  question?: string;
+  answer: string;
+  updatedAt?: Date;
+  source?: string;
+}
+const { question, answer, updatedAt, source } = Astro.props;
+---
+
+<aside class="answer" data-speakable aria-label="核心回答">
+  <strong class="answer__label">
+    {question ? `直答 · ${question}` : '一句话回答'}
+  </strong>
+  <p class="answer__text">{answer}</p>
+  {
+    (updatedAt || source) && (
+      <p class="answer__meta">
+        {updatedAt && <span>本条更新于 {fmtDateCN(updatedAt)}</span>}
+        {updatedAt && source && <span> · </span>}
+        {source && <span>依据：{source}</span>}
+      </p>
+    )
+  }
+</aside>

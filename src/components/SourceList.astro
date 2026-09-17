@@ -1,0 +1,43 @@
+---
+/**
+ * 来源清单（预案 §4 硬约束、§5.4）
+ *
+ * 每条非原创内容必须标注原始来源。对读者是可核查性，
+ * 对生成引擎是「这个站点的说法有出处」的直接证据 —— E-E-A-T 里最硬的一项。
+ *
+ * 标题层级可配：在 FAQ 条目（h3）内部要降到 h4，否则破坏标题层级且产生重复 id。
+ */
+import { fmtDate, type Citation } from '@/lib/content';
+
+interface Props {
+  citations: Citation[];
+  note?: string;
+  /** 标题标签。默认 h2；嵌在更深层级里时传 h4 */
+  as?: 'h2' | 'h3' | 'h4';
+  label?: string;
+}
+const { citations, note, as: Heading = 'h2', label = '资料来源' } = Astro.props;
+---
+
+{
+  citations.length > 0 && (
+    <section class="sources" aria-label={label}>
+      <Heading>{label}</Heading>
+      {note && <p class="muted">{note}</p>}
+      <ol>
+        {citations.map((c: Citation) => (
+          <li>
+            {c.url ? (
+              <a href={c.url} rel="nofollow noopener" target="_blank">{c.title}</a>
+            ) : (
+              <span>{c.title}</span>
+            )}
+            <span class="subtle">，{c.publisher}</span>
+            {c.ref && <span class="ref">（{c.ref}）</span>}
+            {c.accessed && <span class="subtle">，访问于 {fmtDate(c.accessed)}</span>}
+          </li>
+        ))}
+      </ol>
+    </section>
+  )
+}
