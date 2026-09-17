@@ -1,0 +1,93 @@
+---
+/**
+ * 带许可署名的图片。
+ *
+ * **图注里的署名不是装饰，是许可的履行。** CC BY / CC BY-SA 要求标注作者、
+ * 许可名与来源；漏掉任何一项都是违反许可。所以这个组件把它们焊死在图注里，
+ * 调用方无法「顺手省掉」。
+ *
+ * 非本站实拍的图（media.ts 里 local:false）额外打一条「示意 · 非本地实拍」，
+ * 让读者一眼分清「这是物种示意」和「这是沙田港实景」。
+ */
+import { MEDIA, cardSrc, wideSrc } from '@/data/media';
+import { href } from '@/lib/url';
+
+interface Props {
+  id: keyof typeof MEDIA;
+  /** wide=16:9 正文横图，card=4:5 竖图 */
+  shape?: 'wide' | 'card';
+  /** 图片下方是否显示完整图注（默认显示）。card 模式下通常关掉，署名收进 alt/aria */
+  caption?: boolean;
+  class?: string;
+  loading?: 'lazy' | 'eager';
+}
+const { id, shape = 'wide', caption = true, class: cls = '', loading = 'lazy' } = Astro.props;
+const m = MEDIA[id];
+const src = shape === 'card' ? cardSrc(id) : wideSrc(id);
+const w = shape === 'card' ? 760 : 1280;
+const h = shape === 'card' ? 950 : 720;
+
+// 无论 caption 开关，署名都进 alt 的补充（无障碍 + 许可留痕）
+const creditText = `${m.author} · ${m.license}`;
+---
+
+<figure class={`figc ${cls}`}>
+  <img
+    src={href(src)}
+    alt={m.alt}
+    width={w}
+    height={h}
+    loading={loading}
+    decoding="async"
+    class="figc__img"
+  />
+  {
+    caption && (
+      <figcaption class="figc__cap">
+        <span class="figc__title">{m.title}</span>
+        {!m.local && <span class="figc__badge">示意 · 非本地实拍</span>}
+        <span class="figc__credit">
+          {m.note && <span>{m.note}。</span>}
+          图片：<a href={m.sourceUrl} rel="nofollow noopener" target="_blank">{m.author}</a>
+          {' / '}
+          <a href={m.licenseUrl} rel="nofollow noopener license" target="_blank">{m.license}</a>
+        </span>
+      </figcaption>
+    )
+  }
+  {/* caption 关闭时（如卡片图），署名仍以视觉隐藏文本保留，满足许可留痕 */}
+  {!caption && <span class="visually-hidden">{creditText}（{m.sourceUrl}）</span>}
+</figure>
+
+<style>
+  .figc { margin: 0; }
+  .figc__img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: var(--radius);
+    background: var(--bg-sunken);
+  }
+  .figc__cap {
+    margin-top: var(--sp-2);
+    font-size: var(--step--2);
+    color: var(--fg-subtle);
+    line-height: 1.6;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.4rem 0.7rem;
+  }
+  .figc__title { color: var(--fg-muted); font-weight: 500; }
+  .figc__badge {
+    color: var(--warn-fg);
+    background: var(--warn-bg);
+    border: 1px solid var(--warn-line);
+    padding: 0.05rem 0.45rem;
+    border-radius: 2px;
+    letter-spacing: 0.03em;
+  }
+  .figc__credit { flex: 1 1 100%; }
+  .figc__credit a { color: var(--fg-muted); text-decoration: underline; text-underline-offset: 0.15em; }
+  .figc__credit a:hover { color: var(--accent); }
+</style>

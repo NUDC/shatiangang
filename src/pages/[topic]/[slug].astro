@@ -8,6 +8,7 @@ import VerifyNotice from '@/components/VerifyNotice.astro';
 import SourceList from '@/components/SourceList.astro';
 import EntityGraph from '@/components/EntityGraph.astro';
 import Icon from '@/components/Icon.astro';
+import Figure from '@/components/Figure.astro';
 import {
   getArticles,
   getTopics,
@@ -30,6 +31,15 @@ export const getStaticPaths: GetStaticPaths = async () => {
     params: { topic: article.data.topic, slug: article.id },
     props: { article },
   }));
+};
+
+/** 文章 → 物种/物产示意图。只有确有对应物种图的文章才配图；
+    其余保持无图（本站没有沙田港实拍，不硬凑）。 */
+const ARTICLE_FIGURE: Record<string, 'dugong' | 'sipunculus' | 'mangrove' | 'pearls'> = {
+  'hepu-rugen': 'dugong',
+  'shatian-yuye': 'sipunculus',
+  'shankou-hongshulin': 'mangrove',
+  'hepu-nanzhu': 'pearls',
 };
 
 type Props = { article: Article };
@@ -135,6 +145,8 @@ const jsonLd = S.graph([
 
       <div class="stack-lg doc-body">
       {d.answer && <AnswerCard answer={d.answer} question={d.questions[0]} updatedAt={d.updated_at} />}
+
+      {ARTICLE_FIGURE[article.id] && <Figure id={ARTICLE_FIGURE[article.id]} shape="wide" loading="eager" />}
 
       {d.unverified.length > 0 && <VerifyNotice items={d.unverified} />}
 

@@ -5,11 +5,19 @@ import Grain from '@/components/Grain.astro';
 import AnswerCard from '@/components/AnswerCard.astro';
 import AmapView from '@/components/AmapView.astro';
 import { SITE, ENTITIES, HOMONYMS } from '@/data/site';
+import { MEDIA, cardSrc } from '@/data/media';
+import { href } from '@/lib/url';
 import { getTopics, getArticles, getPlaces, getFaqs, fmtDate, type Fact, getMapCenter } from '@/lib/content';
 import * as S from '@/lib/schema';
-import { href } from '@/lib/url';
 
 const topics = await getTopics();
+
+/** 主题 → 物种/物产示意卡图。没有对应图的主题保持空占位（塌陷成细线）。 */
+const TOPIC_IMG: Record<string, keyof typeof MEDIA> = {
+  island: 'mangrove',
+  danjia: 'sipunculus',
+  pearl: 'pearls',
+};
 const articles = await getArticles();
 const places = await getPlaces();
 const faqs = await getFaqs();
@@ -133,7 +141,18 @@ const jsonLd = S.graph([
               href={href(`/${t.data.slug}/`)}
               data-accent={t.data.accent}
             >
-              <span class="card__media card__media--empty" />
+              {TOPIC_IMG[t.data.slug] ? (
+                <span class="card__media">
+                  <img
+                    src={href(cardSrc(TOPIC_IMG[t.data.slug]))}
+                    alt={MEDIA[TOPIC_IMG[t.data.slug]].alt}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </span>
+              ) : (
+                <span class="card__media card__media--empty" />
+              )}
               <Icon name={t.data.icon as any} size="1.9rem" class="card__icon" />
               <span class="card__title">{t.data.title}</span>
               <span class="card__text">{t.data.tagline}</span>

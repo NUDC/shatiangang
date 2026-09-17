@@ -119,7 +119,7 @@ const mapConfig = {
       // **必须在 script 标签之前设置**，否则配置不生效（高德文档明确要求）。
       // 明文模式：securityJsCode 直接给 SDK。纯静态托管没有服务端能藏它，
       // 安全性靠高德控制台的域名白名单，不靠保密。
-      (window as any)._AMapSecurityConfig = { securityJsCode: cfg.securityCode };
+      (window as any)._AMapSecurityConfig = { securityJsCode: securityCode };
 
       const s = document.createElement('script');
       s.src = `https://webapi.amap.com/maps?v=${AMAP_VERSION}&key=${encodeURIComponent(key)}&plugin=AMap.Scale,AMap.ToolBar`;
