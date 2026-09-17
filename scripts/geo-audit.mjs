@@ -23,7 +23,7 @@ const TARGETS = { schema: 0.9, entityCoverage: 0.8, deadLinks: 0.02 };
  * 挂载前缀。必须与 astro.config.mjs 的 BASE 取同一个来源，否则死链检查会
  * 把全站每一条链接都误报成死链 —— 产物里的链接带前缀，dist 的目录结构不带。
  */
-const BASE = (process.env.BASE_PATH || '/shatian/').replace(/\/+$/, '');
+const BASE = (process.env.BASE_PATH || '/shatiangang/').replace(/\/+$/, '');
 /** 产物里的链接 → dist 里的逻辑路径 */
 const stripBase = (l) => (BASE && l.startsWith(BASE + '/') ? l.slice(BASE.length) : l);
 

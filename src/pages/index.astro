@@ -14,9 +14,12 @@ const topics = await getTopics();
 
 /** 主题 → 物种/物产示意卡图。没有对应图的主题保持空占位（塌陷成细线）。 */
 const TOPIC_IMG: Record<string, keyof typeof MEDIA> = {
+  haisi: 'hanpottery',
   island: 'mangrove',
   danjia: 'sipunculus',
   pearl: 'pearls',
+  travel: 'beihai',
+  place: 'mudflat',
 };
 const articles = await getArticles();
 const places = await getPlaces();

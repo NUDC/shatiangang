@@ -27,3 +27,4 @@ src/content/**/_draft/
 
 # 服务端已移除；历史遗留的编译产物目录（如有）
 /server/target/
+public/media/haigang-*.png

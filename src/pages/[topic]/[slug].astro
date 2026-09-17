@@ -35,11 +35,14 @@ export const getStaticPaths: GetStaticPaths = async () => {
 
 /** 文章 → 物种/物产示意图。只有确有对应物种图的文章才配图；
     其余保持无图（本站没有沙田港实拍，不硬凑）。 */
-const ARTICLE_FIGURE: Record<string, 'dugong' | 'sipunculus' | 'mangrove' | 'pearls'> = {
+const ARTICLE_FIGURE: Record<string, string> = {
   'hepu-rugen': 'dugong',
   'shatian-yuye': 'sipunculus',
   'shankou-hongshulin': 'mangrove',
   'hepu-nanzhu': 'pearls',
+  'hepu-shifagang': 'hanbronze',
+  'hepu-hanmuqun': 'hanpottery',
+  'how-to-reach': 'beihai',
 };
 
 type Props = { article: Article };
@@ -146,7 +149,7 @@ const jsonLd = S.graph([
       <div class="stack-lg doc-body">
       {d.answer && <AnswerCard answer={d.answer} question={d.questions[0]} updatedAt={d.updated_at} />}
 
-      {ARTICLE_FIGURE[article.id] && <Figure id={ARTICLE_FIGURE[article.id]} shape="wide" loading="eager" />}
+      {ARTICLE_FIGURE[article.id] && <Figure id={ARTICLE_FIGURE[article.id] as any} shape="wide" loading="eager" />}
 
       {d.unverified.length > 0 && <VerifyNotice items={d.unverified} />}
 

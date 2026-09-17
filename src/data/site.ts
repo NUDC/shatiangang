@@ -192,6 +192,7 @@ export const NAV = [
   { label: '南珠文化', href: '/pearl/' },
   { label: '实用出行', href: '/travel/' },
   { label: '地点实体', href: '/place/' },
+  { label: '笔记墙', href: '/wall/' },
   { label: '常见问题', href: '/faq/' },
 ] as const;
 
