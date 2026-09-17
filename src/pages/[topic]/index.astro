@@ -1,5 +1,5 @@
 ---
-/** 一级主题页。`place` 主题由 src/pages/place/index.astro 单独承接，此处排除以免路由冲突。 */
+/** 一级主题页。`place` 与 `travel` 由各自的 index.astro 单独承接（游客动线版），此处排除以免路由冲突。 */
 import type { GetStaticPaths } from 'astro';
 import Base from '@/layouts/Base.astro';
 import Breadcrumbs from '@/components/Breadcrumbs.astro';
@@ -16,7 +16,7 @@ import { href } from '@/lib/url';
 export const getStaticPaths: GetStaticPaths = async () => {
   const topics = await getTopics();
   return topics
-    .filter((t) => t.data.slug !== 'place')
+    .filter((t) => t.data.slug !== 'place' && t.data.slug !== 'travel')
     .map((topic) => ({ params: { topic: topic.data.slug }, props: { topic } }));
 };
 

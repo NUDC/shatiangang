@@ -1,0 +1,253 @@
+---
+/**
+ * 实用出行（游客动线版）
+ *
+ * 与首页同一套语言：在哪里 / 怎么去 / 住哪里 / 什么时候去。
+ * 「为什么不发时刻表」这类诚实说明与逐条待核实，下沉到 how-to-reach 全文与
+ * llms.txt，这里只给游客真正要用的、可长期有效的判断。
+ */
+import Base from '@/layouts/Base.astro';
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
+import AnswerCard from '@/components/AnswerCard.astro';
+import Icon from '@/components/Icon.astro';
+import AmapView from '@/components/AmapView.astro';
+import { getTopics, getPlaces, getFaqs, type Fact, getMapCenter } from '@/lib/content';
+import * as S from '@/lib/schema';
+import { href } from '@/lib/url';
+
+const topic = (await getTopics()).find((t) => t.data.slug === 'travel')!;
+const d = topic.data;
+const path = '/travel/';
+const article = '/travel/how-to-reach/';
+
+const places = await getPlaces();
+const primary = places.find((p) => p.data.is_primary);
+const mapCenter = await getMapCenter();
+const faqs = (await getFaqs()).filter((f) => f.data.entity_tags.some((t) => d.entity_tags.includes(t)));
+
+const crumbs = [
+  { name: '首页', href: '/' },
+  { name: '实用出行', href: path },
+];
+
+/** 怎么去 —— 不依赖具体班次、可长期有效的判断 */
+const GETTING_THERE = [
+  { k: '大方向', v: '北海 → 合浦县城 → 沙田镇，以陆路为主。北海是最近的地级市与交通枢纽。' },
+  { k: '距离', v: '距合浦县城约 92 公里 —— 不是北海市区的近郊，需单独安排半天以上交通。' },
+  { k: '怎么走', v: '优先自驾或包车；乡镇公共交通班次不确定，是最大的行程变量。' },
+  { k: '当天往返', v: '务必先确认返程末班时间，并预留至少两小时缓冲，别卡点。' },
+];
+
+/** 住哪里 */
+const STAYS = [
+  { title: '美人鱼小镇', text: '「美人鱼」（儒艮）主题文旅小镇，可打卡、可住宿。' },
+  { title: '美人鱼古郡', text: '另一处「美人鱼」主题文旅项目，同样提供住宿。' },
+  { title: '镇中心酒店 · 旅馆', text: '数量不多，胜在靠近码头 —— 方便早起买刚靠港的海鲜、赶潮下滩。' },
+];
+
+/** 什么时候去 */
+const WHEN = [
+  { icon: 'alert', k: '避开台风季', v: '夏秋受台风影响，沿海交通与户外都不适宜。出行前查气象预警，没有商量余地。' },
+  { icon: 'waves', k: '赶海看潮汐', v: '退潮滩涂才露出来，而潮汐逐日变化。看当日实时潮汐预报，按潮位安排。' },
+  { icon: 'boat', k: '想看渔船密集', v: '休渔期大量渔船靠港，码头景象与开渔期完全不同。' },
+  { icon: 'tree', k: '进保护区先问规则', v: '山口红树林、合浦儒艮都是国家级保护区，不是景区，进入规则以管理机构现行规定为准。' },
+];
+
+const jsonLd = S.graph([
+  S.publisher(),
+  S.website(),
+  S.breadcrumb(crumbs),
+  S.webPage({
+    path,
+    title: d.title,
+    description: d.description,
+    datePublished: d.published_at,
+    dateModified: d.updated_at,
+    breadcrumbPath: path,
+    speakableSelectors: ['.answer__text'],
+  }),
+  faqs.length > 0 &&
+    S.faqPage(path, faqs.map((f) => ({ question: f.data.question, answer: f.data.answer }))),
+]);
+---
+
+<Base
+  title={d.title}
+  description={d.description}
+  path={path}
+  jsonLd={jsonLd}
+  accent={d.accent}
+  publishedAt={d.published_at}
+  updatedAt={d.updated_at}
+>
+  <Breadcrumbs items={crumbs} />
+
+  <article class="wrap section">
+    <header class="section-head">
+      <p class="section-head__kicker">
+        <Icon name="compass" size="0.95em" /> 出行指南 · {d.tagline}
+      </p>
+      <h1>{d.title}</h1>
+    </header>
+
+    {d.answer && <AnswerCard answer={d.answer} updatedAt={d.updated_at} />}
+  </article>
+
+  <!-- ============ 在哪里 ============ -->
+  {
+    primary && (
+      <section id="where" class="section section--tint">
+        <div class="wrap">
+          <div class="split">
+            <p class="section-num">01</p>
+            <header class="section-head">
+              <p class="section-head__kicker"><Icon name="map" size="0.9em" /> 在哪里</p>
+              <h2>广西北海合浦县沙田镇</h2>
+              <p>北部湾东北端、沙田半岛一带。下面是地图与基本信息。</p>
+            </header>
+          </div>
+          {mapCenter && (
+            <div class="mt-5">
+              <AmapView center={mapCenter} zoom={11} />
+            </div>
+          )}
+          <div class="mt-5">
+            <div class="factsheet trav-lead">
+              <div class="factsheet__head"><span>基本信息</span></div>
+              <dl>
+                {primary.data.facts
+                  .filter((f: Fact) => f.verified !== false)
+                  .slice(0, 6)
+                  .map((f: Fact) => (
+                    <>
+                      <dt>{f.label}</dt>
+                      <dd>{f.value}</dd>
+                    </>
+                  ))}
+              </dl>
+            </div>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  <!-- ============ 怎么去 ============ -->
+  <section id="how" class="section">
+    <div class="wrap">
+      <div class="split">
+        <p class="section-num">02</p>
+        <header class="section-head">
+          <p class="section-head__kicker"><Icon name="arrow" size="0.9em" /> 怎么去</p>
+          <h2>路线与安排</h2>
+          <p>给方向、给判断方法。具体班车时刻、渡船班次变动频繁，出发前用电话或实时导航确认。</p>
+        </header>
+      </div>
+      <div class="factsheet trav-lead mt-5">
+        <dl>
+          {GETTING_THERE.map((g) => (<><dt>{g.k}</dt><dd>{g.v}</dd></>))}
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 住哪里 ============ -->
+  <section id="stay" class="section section--tint">
+    <div class="wrap">
+      <div class="split">
+        <p class="section-num">03</p>
+        <header class="section-head">
+          <p class="section-head__kicker"><Icon name="anchor" size="0.9em" /> 住哪里</p>
+          <h2>住宿</h2>
+          <p>集中在镇中心和两处「美人鱼」（儒艮）主题文旅项目。价格与房态本站未实地核实，出行前请自行确认。</p>
+        </header>
+      </div>
+      <div class="grid-cards mt-5">
+        {
+          STAYS.map((s) => (
+            <a class="card trav-card" href={article}>
+              <Icon name="boat" size="1.7rem" class="card__icon" />
+              <span class="card__title">{s.title}</span>
+              <span class="card__text">{s.text}</span>
+            </a>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 什么时候去 ============ -->
+  <section id="when" class="section">
+    <div class="wrap">
+      <div class="split">
+        <p class="section-num">04</p>
+        <header class="section-head">
+          <p class="section-head__kicker"><Icon name="clock" size="0.9em" /> 什么时候去</p>
+          <h2>季节与时机</h2>
+        </header>
+      </div>
+      <div class="grid-cards mt-5">
+        {
+          WHEN.map((w) => (
+            <div class="card trav-card">
+              <Icon name={w.icon as any} size="1.7rem" class="card__icon" />
+              <span class="card__title">{w.k}</span>
+              <span class="card__text">{w.v}</span>
+            </div>
+          ))
+        }
+      </div>
+
+      <p class="mt-5">
+        <a class="btn" href={href(article)}>
+          完整出行说明（含安全提醒与待核实项） <Icon name="arrow" size="0.95em" />
+        </a>
+      </p>
+    </div>
+  </section>
+
+  {
+    faqs.length > 0 && (
+      <section class="section section--tint">
+        <div class="wrap">
+          <header class="section-head">
+            <p class="section-head__kicker">相关问答</p>
+            <h2>出行常见问题</h2>
+          </header>
+          <div class="grid-2">
+            {faqs.map((f) => (
+              <div class="faq-item">
+                <h3 id={f.id}>{f.data.question}</h3>
+                <p>{f.data.answer}</p>
+                {f.data.read_more.length > 0 && (
+                  <p class="faq-item__more">
+                    {f.data.read_more.map((r) => (
+                      <a class="tag" href={href(r.href)}>
+                        <Icon name="arrow" size="0.8em" /> {r.label}
+                      </a>
+                    ))}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+</Base>
+
+<style>
+  .trav-lead { max-width: 52rem; }
+  .trav-card {
+    padding: var(--sp-4);
+    background: var(--bg-raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    gap: 0.5rem;
+    text-decoration: none;
+  }
+  .trav-card .card__icon { margin-bottom: var(--sp-2); }
+  .trav-card .card__title { font-size: var(--step-1); }
+  a.trav-card:hover { border-color: var(--accent); }
+</style>
