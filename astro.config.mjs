@@ -12,13 +12,13 @@ const SITE = process.env.SITE_URL || 'https://www.shatiangang.cn';
 /**
  * 挂载路径。
  *
- * 公网入口目前是网关的 /shatian 前缀（根路径被公益官网 wego-site 兜底占着），
- * 所以默认值就是 '/shatian/'。将来有了独立域名，`BASE_PATH=/` 重新构建即可，
- * 站内所有链接经由 src/lib/url.ts 自动回到根形式。
+ * 站点托管在 GitHub Pages 项目站点，路径是 /<仓库名>/ = /shatiangang/，
+ * 所以默认值就是 '/shatiangang/'。将来换自定义域名（内容挂在根上），
+ * `BASE_PATH=/` 重新构建即可，站内链接经 src/lib/url.ts 自动回到根形式。
  *
  * 注意：**base 不会改变 dist 的目录结构**（产物仍是 dist/place/xxx/index.html），
- * 它只影响产物里写出来的 URL。所以 nginx 必须把 /shatian/ 前缀剥掉再找文件
- * —— 见 ops/nginx.conf，与 wego-stockquant 的 quant 同一形状。
+ * 它只影响产物里写出来的 URL。GitHub Pages 项目站点天然把仓库名作为一级路径，
+ * 所以 base 与站点实际路径一致，无需任何前缀剥离。
  */
 const BASE = normalizeBase(process.env.BASE_PATH);
 
@@ -27,20 +27,20 @@ const BASE = normalizeBase(process.env.BASE_PATH);
  *
  * 专门防一类 Windows 上的坑：Git Bash（MSYS）会把「看起来像 Unix 路径」的
  * 环境变量值自动转成 Windows 路径，`/shatian/` 会变成
- * `D:/Program Files/Git/shatian/`。ops/build-release.sh 里关掉了这个转换，
- * 但直接手敲 `BASE_PATH=/shatian/ npm run build` 的人不会经过那个脚本。
+ * `D:/Program Files/Git/shatiangang/`。手敲 `BASE_PATH=/shatiangang/ npm run build`
+ * 时若被转换会出错，命令前加 MSYS_NO_PATHCONV=1 即可（CI 在 Linux 上无此问题）。
  *
  * 带盘符的值一旦漏进来，Astro 报的是 UnsupportedExternalRedirect ——
  * 一个完全看不出与 Windows 有关的错。这里直接拦掉并说清原因。
  */
 /** @param {string | undefined} raw */
 function normalizeBase(raw) {
-  if (!raw) return '/shatian/';
+  if (!raw) return '/shatiangang/';
   if (/^[A-Za-z]:/.test(raw) || !raw.startsWith('/')) {
     throw new Error(
       `BASE_PATH 不是站内路径：${raw}\n` +
-        '  Windows 的 Git Bash 会把 /shatian/ 转成 D:/Program Files/Git/shatian/。\n' +
-        '  改用 ops/build-release.sh，或在命令前加 MSYS_NO_PATHCONV=1。'
+        '  Windows 的 Git Bash 会把 /shatiangang/ 转成 D:/Program Files/Git/shatiangang/。\n' +
+        '  在命令前加 MSYS_NO_PATHCONV=1（CI 在 Linux 上无此问题）。'
     );
   }
   return raw.endsWith('/') ? raw : raw + '/';
@@ -82,7 +82,7 @@ export default defineConfig({
   // 实体消歧：别称 / 旧称一律 301 到 canonical 实体页（预案 §3.2）
   //
   // **source 与 destination 的处理方式不一样，这是 Astro 的一个坑：**
-  // source 是逻辑路由（产物落在 dist/shatian-yugang/，由 nginx 剥前缀后命中），
+  // source 是逻辑路由（产物落在 dist/shatian-yugang/，Pages 直接按此路径命中），
   // 而 destination 被**原样写进 meta refresh / Location**，Astro 不给它补 base。
   // 不手动补的话，带前缀部署时这 5 条重定向全部跳到不存在的地址
   // —— 而且页面本身正常，只有点了别称链接的人会掉进去。

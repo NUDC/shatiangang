@@ -103,42 +103,22 @@ scripts/geo-audit.mjs     # 预案 §8 指标的自动巡检
 
 ## 部署
 
-同一份源码，两个托管目标，差别只有一个 `BASE_PATH`：
+**托管在 GitHub Pages,纯静态,无后端、无数据库。**
 
-| 目标 | 地址 | 构建参数 |
-|---|---|---|
-| GitHub Pages（展示） | `https://nudc.github.io/shatiangang/` | `BASE_PATH=/shatiangang/`，见 `.github/workflows/pages.yml` |
-| 自建 nginx（frp+网关） | `http://114.55.135.237/shatian/` | `BASE_PATH=/shatian/`，见 `ops/` |
+推送到 `main` → GitHub Actions 自动构建并发布(见 `.github/workflows/pages.yml`)。
+首次需在仓库 `Settings → Pages → Source` 选 **GitHub Actions**。
 
-**纯静态站**：无后端、无数据库。高德地图用明文 `securityJsCode`（纯静态托管无服务端可藏密钥），
-安全性靠高德控制台的**域名白名单** —— 上线前把 `nudc.github.io` 加进 key 的白名单。
-
-推 GitHub 后 Actions 自动构建并发布到 Pages。首次需在仓库
-`Settings → Pages → Source` 选 **GitHub Actions**。
-
-### 自建 nginx 部署
-
-已上线，详见 [`ops/README.md`](ops/README.md)（链路拓扑、前缀约定、踩过的坑）。
-
-```bash
-SITE_URL=http://114.55.135.237 BASE_PATH=/shatian/ SHATIAN_WEB_PORT=8092 ops/publish-release.sh
-```
-
-| 入口 | 地址 |
+| | 地址 |
 |---|---|
-| 公网（经网关） | `http://114.55.135.237/shatian/` |
-| 局域网直连 | `http://192.168.64.201:8092/shatian/` |
-| frp 隧道 | 内网 `127.0.0.1:8092` → 公网 `172.18.0.1:18089`（只绑 docker 网桥） |
+| 主站(GitHub Pages) | `https://nudc.github.io/shatiangang/` |
+| 网关短链 | `http://114.55.135.237/shatiangang/` → 302 跳转到主站 |
 
-运行时就是一个 `nginx:alpine` 容器加一棵静态目录树：没有后端、没有数据库。
-发布流程：本地构建 → 打包（sha256 + 内容摘要标签）→ scp → 服务器建镜像 → compose → 健康检查 → 失败自动回滚。
-
-**挂载前缀**：站点当前挂在 `/shatian` 下（网关根路径被公益官网占着）。
-前缀不写进业务代码，统一走 `src/lib/url.ts`；换独立域名时 `BASE_PATH=/` 重新构建即可。
-
-> ⚠️ **子路径托管的固有限制**：爬虫只读源站根路径的 `/robots.txt`，
-> 本站那份在 `/shatian/robots.txt`，规则实际不生效。sitemap 需直接提交到搜索资源平台。
-> 根治办法是独立域名 —— 详见 `ops/README.md`。
+- **`BASE_PATH=/shatiangang/`** —— 项目站点挂在 `/<仓库名>/` 下。站内链接经
+  `src/lib/url.ts` 从这个 base 自动派生,换挂载点只改这一个环境变量。
+- **高德地图用明文 `securityJsCode`** —— 纯静态无服务端可藏密钥。安全性靠高德控制台
+  的**域名白名单**:上线前把 `nudc.github.io` 加进 key 的白名单。
+- 网关短链只是一个 nginx 302,本身不托管内容(边缘网关无法反代外部 https,
+  只能跳转)。
 
 ## 内容维护
 
