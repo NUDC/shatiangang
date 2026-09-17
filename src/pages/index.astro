@@ -4,6 +4,8 @@ import Icon from '@/components/Icon.astro';
 import Grain from '@/components/Grain.astro';
 import AnswerCard from '@/components/AnswerCard.astro';
 import AmapView from '@/components/AmapView.astro';
+import NoteMarquee from '@/components/NoteMarquee.astro';
+import { NOTES } from '@/data/notes';
 import { SITE, ENTITIES, HOMONYMS } from '@/data/site';
 import { MEDIA, cardSrc } from '@/data/media';
 import { href } from '@/lib/url';
@@ -120,11 +122,37 @@ const jsonLd = S.graph([
     </div>
   </section>
 
-  <!-- ============ 六大主题 ============ -->
-  <section class="section section--tint">
+  <!-- ============ 笔记墙影像带 ============ -->
+  <section class="section section--tint nw-band">
     <div class="wrap">
       <div class="split">
         <p class="section-num reveal">02</p>
+        <header class="section-head reveal" data-delay="1">
+          <p class="section-head__kicker">站外内容 · 小红书</p>
+          <h2>旅行者镜头里的沙田港</h2>
+          <p>
+            全站唯一的真实影像 —— 来自小红书旅行者拍下的日落、赶海、渡口与露营。
+            <strong>本站不搬运图文</strong>，只放封面预览与链接，点击跳转小红书看原文，
+            版权归原作者。
+          </p>
+          <p class="mt-4">
+            <a class="btn btn--ghost" href={href('/wall/')}>
+              进入笔记墙 · {NOTES.length} 条 <Icon name="arrow" size="0.95em" />
+            </a>
+          </p>
+        </header>
+      </div>
+    </div>
+    <div class="nw-band__strip reveal mt-5">
+      <NoteMarquee />
+    </div>
+  </section>
+
+  <!-- ============ 六大主题 ============ -->
+  <section class="section">
+    <div class="wrap">
+      <div class="split">
+        <p class="section-num reveal">03</p>
         <header class="section-head reveal" data-delay="1">
           <p class="section-head__kicker">内容架构</p>
           <h2>六个一级主题</h2>
@@ -177,10 +205,10 @@ const jsonLd = S.graph([
   <!-- ============ 核心实体 ============ -->
   {
     primary && (
-      <section class="section">
+      <section class="section section--tint">
         <div class="wrap">
           <div class="split">
-            <p class="section-num reveal">03</p>
+            <p class="section-num reveal">04</p>
             <header class="section-head reveal" data-delay="1">
               <p class="section-head__kicker">核心实体</p>
               <h2>{primary.data.title}</h2>
@@ -261,10 +289,10 @@ const jsonLd = S.graph([
   }
 
   <!-- ============ 最新专题 ============ -->
-  <section class="section section--tint">
+  <section class="section">
     <div class="wrap">
       <div class="split">
-        <p class="section-num reveal">04</p>
+        <p class="section-num reveal">05</p>
         <header class="section-head reveal" data-delay="1">
           <p class="section-head__kicker">专题正文</p>
           <h2>最近更新</h2>
@@ -299,10 +327,10 @@ const jsonLd = S.graph([
   </section>
 
   <!-- ============ FAQ ============ -->
-  <section class="section">
+  <section class="section section--tint">
     <div class="wrap split">
       <div>
-        <p class="section-num reveal">05</p>
+        <p class="section-num reveal">06</p>
         <header class="section-head reveal" data-delay="1" style="margin-top:var(--sp-3)">
           <p class="section-head__kicker">常见问题</p>
           <h2>直接回答<br />带出处</h2>
@@ -329,10 +357,10 @@ const jsonLd = S.graph([
   </section>
 
   <!-- ============ 消歧 ============ -->
-  <section class="section section--tint">
+  <section class="section">
     <div class="wrap">
       <div class="split">
-        <p class="section-num reveal">06</p>
+        <p class="section-num reveal">07</p>
         <header class="section-head reveal" data-delay="1">
           <p class="section-head__kicker">实体消歧</p>
           <h2>你要找的是哪个「沙田」？</h2>
@@ -361,10 +389,10 @@ const jsonLd = S.graph([
   </section>
 
   <!-- ============ 机器可读 ============ -->
-  <section class="section">
+  <section class="section section--tint">
     <div class="wrap">
       <div class="split">
-        <p class="section-num reveal">07</p>
+        <p class="section-num reveal">08</p>
         <header class="section-head reveal" data-delay="1">
           <p class="section-head__kicker">给机器的入口</p>
           <h2>结构化数据是公开的</h2>
@@ -398,4 +426,8 @@ const jsonLd = S.graph([
     letter-spacing: 0.06em;
   }
   .card__kicker { align-self: flex-start; margin-bottom: 0.7rem; }
+
+  /* 影像带整段收窄上下留白：标题与影像带贴近，读作一个整体单元 */
+  .nw-band { padding-bottom: var(--sp-6); }
+  .nw-band__strip { width: 100%; }
 </style>

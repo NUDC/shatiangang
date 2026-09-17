@@ -1,0 +1,117 @@
+---
+/**
+ * 首页笔记影像带 —— 全宽自动横向滚动的小红书封面墙。
+ *
+ * 这是全站**唯一的真实沙田港影像**（其余图片都是「物种/物产示意 · 非本地实拍」）。
+ * 每张封面取自小红书为分享发布的 OG 预览，卡片跳回原文、版权归原作者。
+ *
+ * 只渲染带封面的笔记；轨道复制一份实现无缝循环。prefers-reduced-motion
+ * 下停止动画、改为可手动横向滚动（见样式末尾）。
+ */
+import { NOTES } from '@/data/notes';
+import { href } from '@/lib/url';
+
+const withCover = NOTES.filter((n) => n.cover);
+// 复制一份做无缝循环；不足以铺满时也无妨（轨道短则动画行程按比例短）
+const track = [...withCover, ...withCover];
+---
+
+{
+  withCover.length > 0 && (
+    <div class="nm" aria-label="小红书上的沙田港照片">
+      <div class="nm__track" style={`--n:${withCover.length}`}>
+        {track.map((n, i) => (
+          <a
+            class="nm__cell"
+            href={n.url}
+            rel="nofollow noopener ugc"
+            target="_blank"
+            aria-hidden={i >= withCover.length ? 'true' : undefined}
+            tabindex={i >= withCover.length ? -1 : undefined}
+          >
+            <img src={href(n.cover!)} alt={i < withCover.length ? n.title : ''} loading="lazy" decoding="async" />
+            <span class="nm__cap">
+              <span class="nm__tag">小红书</span>
+              <span class="nm__title">{n.title}</span>
+            </span>
+          </a>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+<style>
+  .nm {
+    --cell-w: 15.5rem;
+    --gap: var(--sp-3);
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    /* 两端羽化，暗示还有更多、且不与版心生硬对齐 */
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+  }
+  .nm__track {
+    display: flex;
+    gap: var(--gap);
+    width: max-content;
+    /* 一整份（含右侧 gap）的位移 = -(n*cell + n*gap)，位移完刚好接上复制份 */
+    animation: nm-scroll calc(var(--n) * 5.5s) linear infinite;
+  }
+  .nm:hover .nm__track,
+  .nm__track:focus-within { animation-play-state: paused; }
+
+  .nm__cell {
+    position: relative;
+    flex: 0 0 var(--cell-w);
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    border-radius: var(--radius);
+    background: var(--bg-sunken);
+    text-decoration: none;
+    isolation: isolate;
+  }
+  .nm__cell img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s var(--ease); }
+  .nm__cell:hover img { transform: scale(1.06); }
+  .nm__cell::after {
+    content: '';
+    position: absolute; inset: 0; z-index: 1;
+    background: linear-gradient(180deg, transparent 40%, rgb(8 12 16 / 0.72));
+    opacity: 0.9;
+  }
+  .nm__cap {
+    position: absolute; inset: auto 0 0 0; z-index: 2;
+    padding: 0.75rem 0.85rem;
+    display: flex; flex-direction: column; gap: 0.35rem;
+    color: #fff;
+  }
+  .nm__tag {
+    align-self: flex-start;
+    font-size: var(--step--2); letter-spacing: 0.04em;
+    padding: 0.12rem 0.5rem; border-radius: 2px;
+    background: rgb(255 255 255 / 0.16);
+    border: 1px solid rgb(255 255 255 / 0.28);
+    backdrop-filter: blur(4px);
+  }
+  .nm__title {
+    font-size: var(--step--1); line-height: 1.4; font-weight: 500;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    text-shadow: 0 1px 8px rgb(0 0 0 / 0.4);
+  }
+
+  @keyframes nm-scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(calc(-1 * var(--n) * (var(--cell-w) + var(--gap)))); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .nm {
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-mask-image: none; mask-image: none;
+    }
+    .nm::-webkit-scrollbar { display: none; }
+    .nm__track { animation: none; }
+  }
+</style>

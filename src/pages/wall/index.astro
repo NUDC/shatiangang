@@ -22,6 +22,10 @@ const crumbs = [
   { name: '首页', href: '/' },
   { name: '笔记墙', href: path },
 ];
+
+// 头条优先选一条有封面的；其余进网格
+const featured = NOTES.find((n) => n.cover) ?? NOTES[0];
+const rest = NOTES.filter((n) => n !== featured);
 const title = '小红书笔记墙 · 沙田港';
 const description =
   '站长精选的小红书沙田港相关笔记链接。本站只收录链接与手动录入的标题，不抓取、不转存图文，点击跳转小红书看原文，内容版权归原作者所有。';
@@ -44,39 +48,71 @@ const jsonLd = S.graph([
 <Base title={title} description={description} path={path} jsonLd={jsonLd} accent="coral">
   <Breadcrumbs items={crumbs} />
 
-  <section class="wrap section">
-    <div class="split">
-      <p class="section-num">08</p>
-      <header class="section-head">
+  <!-- ============ 编辑式表头 ============ -->
+  <section class="wrap section wall-hero">
+    <div class="wall-hero__grid">
+      <div class="wall-hero__lead">
         <p class="section-head__kicker">站外内容 · 小红书</p>
-        <h1>笔记墙</h1>
-        <p>
-          站长精选的小红书沙田港相关笔记。<strong>本站只放链接与标题，不搬图文</strong> ——
-          卡片点击跳转小红书看原文，内容版权归原作者。
+        <h1 class="wall-hero__title">笔记墙</h1>
+        <p class="wall-hero__lede">
+          旅行者镜头里的沙田港 —— 日落、赶海、渡口、露营。这是全站唯一的真实影像。
+          <strong>本站不搬运图文</strong>，每条只放一张封面预览与链接，点击跳转小红书看原文，
+          版权归原作者。
         </p>
-      </header>
+      </div>
+      <aside class="wall-hero__count" aria-label="收录数量">
+        <span class="wall-hero__num">{NOTES.length}</span>
+        <span class="wall-hero__unit">条精选笔记</span>
+      </aside>
     </div>
 
-    <div class="wall-note-rules mt-5">
+    <div class="wall-note-rules">
       <div class="wall-rule">
         <Icon name="link" size="1.05em" />
         <div>
-          <strong>只是链接推荐</strong>
-          <p>每条卡片是一个指向小红书的链接，点了跳过去看原文。图文全部留在小红书，本站不转存。</p>
+          <strong>链接优先 · 封面预览</strong>
+          <p>每张卡片指向小红书原文，只显示平台为分享发布的封面预览；笔记正文与完整图集都留在小红书。</p>
         </div>
       </div>
       <div class="wall-rule">
         <Icon name="shield" size="1.05em" />
         <div>
-          <strong>手工精选，不抓取</strong>
-          <p>小红书笔记需登录才能读，本站既不爬取也无法爬取。这些是站长一条条手动挑选录入的。</p>
+          <strong>手工精选，不越界</strong>
+          <p>不登录、不带 Cookie、不伪造签名、不抓正文。站长逐条挑选录入，版权与流量都回给作者。</p>
         </div>
       </div>
     </div>
+  </section>
 
-    <div class="notewall mt-5">
+  <!-- ============ 精选头条 ============ -->
+  {
+    featured && (
+      <section class="wrap wall-feature">
+        <a class="feature" href={featured.url} rel="nofollow noopener ugc" target="_blank">
+          {featured.cover && (
+            <span class="feature__media">
+              <img src={href(featured.cover)} alt={featured.title} loading="eager" decoding="async" />
+            </span>
+          )}
+          <span class="feature__body">
+            <span class="tag tag--accent">小红书 · 头条</span>
+            <span class="feature__title">{featured.title}</span>
+            {featured.blurb && <span class="feature__blurb">{featured.blurb}</span>}
+            <span class="feature__go">
+              {featured.author && <span>@{featured.author}</span>}
+              <span class="feature__cta">在小红书查看原文 →</span>
+            </span>
+          </span>
+        </a>
+      </section>
+    )
+  }
+
+  <!-- ============ 笔记网格 ============ -->
+  <section class="wrap section wall-grid-wrap">
+    <div class="notewall">
       {
-        NOTES.map((n) => (
+        rest.map((n) => (
           <a class="notecard" href={n.url} rel="nofollow noopener ugc" target="_blank">
             {n.cover ? (
               <span class="notecard__media">
@@ -111,10 +147,11 @@ const jsonLd = S.graph([
       <h2>关于这面墙</h2>
       <p>
         <strong>不抓取、不搬运。</strong>这些卡片全是站长手动挑选的小红书笔记链接，
-        点击跳转原文，图文与版权都在原作者那里。本站不使用任何爬虫、登录态或反爬手段。
+        封面取自小红书为分享发布的预览图（与微信展开链接看到的同源），点击即跳转原文，
+        笔记正文与完整图集、版权都在原作者那里。本站不使用登录态、不伪造反爬签名。
       </p>
       <p>
-        如你是某条笔记的作者、不希望本站链接你的内容，或想推荐值得收录的笔记，
+        如你是某条笔记的作者、不希望本站预览你的内容，或想推荐值得收录的笔记，
         发邮件到 <a href={`mailto:${SITE.author.email}`}>{SITE.author.email}</a> 即可。
         相关规则见<a href={href('/legal/copyright/')}>《版权声明》</a>。
       </p>
@@ -123,15 +160,64 @@ const jsonLd = S.graph([
 </Base>
 
 <style>
+  /* ---------- 表头 ---------- */
+  .wall-hero { padding-bottom: var(--sp-4); }
+  .wall-hero__grid {
+    display: grid; gap: var(--sp-4) var(--sp-5);
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    padding-bottom: var(--sp-5);
+    border-bottom: 1px solid var(--fg);
+  }
+  @media (max-width: 46rem) { .wall-hero__grid { grid-template-columns: 1fr; align-items: start; } }
+  .wall-hero__title { font-size: var(--step-4); letter-spacing: -0.03em; margin: var(--sp-2) 0 var(--sp-3); }
+  .wall-hero__lede { color: var(--fg-muted); max-width: 40rem; font-size: var(--step-0); }
+  .wall-hero__count { text-align: right; line-height: 1; }
+  @media (max-width: 46rem) { .wall-hero__count { text-align: left; } }
+  .wall-hero__num {
+    font-family: var(--font-serif); font-weight: 700; font-size: var(--step-5);
+    color: var(--accent); letter-spacing: -0.04em; display: block; font-variant-numeric: tabular-nums;
+  }
+  .wall-hero__unit { font-size: var(--step--1); color: var(--fg-subtle); letter-spacing: 0.1em; }
+
   .wall-note-rules {
     display: grid;
     gap: var(--sp-3);
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+    margin-top: var(--sp-4);
   }
   .wall-rule { display: flex; gap: var(--sp-2); padding-top: var(--sp-3); border-top: 1px solid var(--fg); }
   .wall-rule svg { flex: none; color: var(--accent); margin-top: 0.3rem; }
   .wall-rule strong { display: block; margin-bottom: 0.3rem; }
   .wall-rule p { font-size: var(--step--1); color: var(--fg-muted); line-height: 1.7; }
+
+  /* ---------- 精选头条 ---------- */
+  .wall-feature { padding-top: var(--sp-6); }
+  .feature {
+    display: grid; grid-template-columns: 1.1fr 1fr; gap: 0;
+    text-decoration: none; color: inherit;
+    border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden;
+    background: var(--bg-raised); box-shadow: var(--shadow-md); isolation: isolate;
+  }
+  @media (max-width: 52rem) { .feature { grid-template-columns: 1fr; } }
+  .feature__media { position: relative; overflow: hidden; aspect-ratio: 16 / 10; background: var(--bg-sunken); }
+  @media (max-width: 52rem) { .feature__media { aspect-ratio: 3 / 2; } }
+  .feature__media img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.8s var(--ease); }
+  .feature:hover .feature__media img { transform: scale(1.05); }
+  .feature__body { padding: var(--sp-5); display: flex; flex-direction: column; gap: var(--sp-3); align-items: flex-start; justify-content: center; }
+  .feature__title {
+    font-family: var(--font-serif); font-weight: 700; font-size: var(--step-2);
+    line-height: 1.25; letter-spacing: -0.02em;
+  }
+  .feature:hover .feature__title { text-decoration: underline; text-underline-offset: 0.2em; }
+  .feature__blurb { color: var(--fg-muted); font-size: var(--step-0); line-height: 1.7; }
+  .feature__go {
+    margin-top: var(--sp-2); display: flex; gap: var(--sp-3); align-items: baseline; flex-wrap: wrap;
+    font-size: var(--step--1); color: var(--fg-subtle);
+  }
+  .feature__cta { color: var(--accent); font-weight: 500; }
+
+  .wall-grid-wrap { padding-top: var(--sp-6); }
 
   .notewall {
     display: grid;
