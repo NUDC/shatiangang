@@ -142,4 +142,11 @@ export const NOTES: Note[] = [
     blurb: "回程再次赴约日落，宁静快乐随心。",
     cover: "/media/notes/67029821000000002a03081b.jpg",
   },
+  {
+    url: "https://www.xiaohongshu.com/explore/698b1713000000000d009149?xsec_token=AB83sNtLL8teULixx-0Uqqw2JSoUxYknq59dYkVd4aNWA=&xsec_source=pc_search&source=web_explore_feed",
+    title: "北海小众海边沙滩",
+    author: "",
+    blurb: "想看无数次海，治愈系海边。",
+    cover: "/media/notes/698b1713000000000d009149.jpg",
+  },
 ];
