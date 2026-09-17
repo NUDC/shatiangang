@@ -135,4 +135,11 @@ export const NOTES: Note[] = [
     blurb: "南宁自驾约 2.5 小时到海战村，含住宿/美食/赶海攻略。",
     cover: "/media/notes/68a11629000000001b02255e.jpg",
   },
+  {
+    url: "https://www.xiaohongshu.com/explore/67029821000000002a03081b?xsec_token=ABokVB5kPpPoRLLgWk6Irmi6DSD_syX3OSaPKIeT_ddco=&xsec_source=pc_search&source=web_explore_feed",
+    title: "广西省北海市合浦县沙田码头",
+    author: "",
+    blurb: "回程再次赴约日落，宁静快乐随心。",
+    cover: "/media/notes/67029821000000002a03081b.jpg",
+  },
 ];
