@@ -114,4 +114,11 @@ export const NOTES: Note[] = [
     blurb: "航拍 · 赶海。",
     cover: "/media/notes/67ad88a9000000001701fff8.jpg",
   },
+  {
+    url: "https://www.xiaohongshu.com/explore/68abf95b000000001d02d7fe?xsec_token=ABILzfzA28BfITd0UK7npXDvaToOJw5_xhhZvilgxKcdk=&xsec_source=pc_search&source=web_explore_feed",
+    title: "玉林周边 北海合浦沙田港",
+    author: "",
+    blurb: "沙田港的晚霞，这里有和银滩一样细软的白沙子。",
+    cover: "/media/notes/68abf95b000000001d02d7fe.jpg",
+  },
 ];
