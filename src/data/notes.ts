@@ -121,4 +121,11 @@ export const NOTES: Note[] = [
     blurb: "沙田港的晚霞，这里有和银滩一样细软的白沙子。",
     cover: "/media/notes/68abf95b000000001d02d7fe.jpg",
   },
+  {
+    url: "https://www.xiaohongshu.com/explore/69f9fd7f000000003601fc92?xsec_token=ABTntfKuAwt4lpDAZcpoVixSCC8q-VXAUxs4vqWjAd66Y=&xsec_source=pc_search&source=web_explore_feed",
+    title: "宝藏露营地-合浦沙田港",
+    author: "",
+    blurb: "露营/停车/潮汐实用攻略：帐篷含烧烤桌 50、过夜 98，沙滩边有水管冲洗。",
+    cover: "/media/notes/69f9fd7f000000003601fc92.jpg",
+  },
 ];
