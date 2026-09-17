@@ -6,7 +6,7 @@ import AnswerCard from '@/components/AnswerCard.astro';
 import AmapView from '@/components/AmapView.astro';
 import NoteMarquee from '@/components/NoteMarquee.astro';
 import { NOTES } from '@/data/notes';
-import { SITE, ENTITIES, HOMONYMS } from '@/data/site';
+import { SITE } from '@/data/site';
 import { MEDIA, cardSrc } from '@/data/media';
 import { href } from '@/lib/url';
 import { getTopics, getArticles, getPlaces, getFaqs, fmtDate, type Fact, getMapCenter } from '@/lib/content';
@@ -32,23 +32,8 @@ const primary = places.find((p) => p.data.is_primary);
 const topFaqs = faqs.slice(0, 5);
 const latest = articles.slice(0, 3);
 
-/** 统计口径公开透明，同时是预案 §8 的效果指标 */
-const stats = [
-  { num: String(places.length), label: '地点实体页', src: '每个可识别地点单独成页' },
-  { num: String(articles.length), label: '专题正文', src: '原创占比 100%' },
-  { num: String(faqs.length), label: 'FAQ 条目', src: '供答案引擎直接引用' },
-  { num: String(ENTITIES.length), label: '注册实体', src: '含别称与消歧规则' },
-];
-
 const heroAnswer =
   '沙田港位于广西壮族自治区北海市合浦县沙田镇，地处北部湾东北端、沙田半岛一带，是一座国家一级渔港。半岛东侧为英罗港、西侧为丹兜海，两侧均属广西山口红树林生态国家级自然保护区；沿岸海域另设有中国唯一的合浦儒艮国家级自然保护区。';
-
-const MACHINE = [
-  { icon: 'data', name: 'entities.json', href: '/entities.json', text: '全部实体的结构化数据：行政区划全称、别称、坐标核实状态、canonical URL。' },
-  { icon: 'book', name: 'llms.txt', href: '/llms.txt', text: '为语言模型准备的站点索引：核心事实、页面清单与引用规则。' },
-  { icon: 'quote', name: 'llms-full.txt', href: '/llms-full.txt', text: '全站正文的纯文本合集，单文件可直接读取。' },
-  { icon: 'shield', name: 'robots.txt', href: '/robots.txt', text: '抓取范围声明：开放正文与实体数据，限制表单与后台路径。' },
-];
 
 const jsonLd = S.graph([
   S.publisher(),
@@ -101,23 +86,12 @@ const jsonLd = S.graph([
     </div>
   </section>
 
-  <!-- ============ 直答 + 统计 ============ -->
+  <!-- ============ 一句话认识沙田港 ============ -->
   <section class="section">
     <div class="wrap split">
       <p class="section-num reveal">01</p>
       <div class="reveal" data-delay="1">
-        <AnswerCard answer={heroAnswer} updatedAt={new Date()} source="农业部农办渔〔2005〕44 号等公开来源" />
-        <div class="stats mt-5">
-          {
-            stats.map((s, i) => (
-              <div class="stat reveal" data-delay={String(Math.min(i, 3))}>
-                <span class="stat__num">{s.num}</span>
-                <span class="stat__label">{s.label}</span>
-                <span class="stat__src">{s.src}</span>
-              </div>
-            ))
-          }
-        </div>
+        <AnswerCard answer={heroAnswer} updatedAt={new Date()} />
       </div>
     </div>
   </section>
@@ -221,66 +195,28 @@ const jsonLd = S.graph([
             </div>
           )}
 
-          <div class="grid-2 mt-5">
-            <div class="reveal">
-              <div class="factsheet">
-                <div class="factsheet__head">
-                  <span>已核实事实（附来源）</span>
-                  <span class="subtle">核对于 {fmtDate(primary.data.updated_at)}</span>
-                </div>
-                <dl>
-                  {primary.data.facts
-                    .filter((f: Fact) => f.verified !== false)
-                    .slice(0, 6)
-                    .map((f: Fact) => (
-                      <>
-                        <dt>{f.label}</dt>
-                        <dd>
-                          {f.value}
-                          {f.source && <span class="src">来源：{f.source}</span>}
-                        </dd>
-                      </>
-                    ))}
-                </dl>
+          <div class="mt-5 reveal">
+            <div class="factsheet fact-lead">
+              <div class="factsheet__head">
+                <span>关于沙田港</span>
               </div>
-              <p class="mt-4">
-                <a class="btn btn--ghost" href={href('/place/shatian-gang/')}>
-                  完整实体页（含待核实项与消歧说明） <Icon name="arrow" size="0.95em" />
-                </a>
-              </p>
+              <dl>
+                {primary.data.facts
+                  .filter((f: Fact) => f.verified !== false)
+                  .slice(0, 6)
+                  .map((f: Fact) => (
+                    <>
+                      <dt>{f.label}</dt>
+                      <dd>{f.value}</dd>
+                    </>
+                  ))}
+              </dl>
             </div>
-
-            <div class="reveal" data-delay="1">
-              <div class="verify-notice">
-                <p class="verify-notice__title">
-                  <Icon name="alert" size="1.05em" />
-                  本站的一条硬规则
-                </p>
-                <p>
-                  无法核实的字段 —— 港口坐标、现有泊位构成、年吞吐量、班车时刻 ——
-                  一律显式标注为「待核实」，既不写进正文结论，也不写进结构化数据。
-                </p>
-                <p style="margin-top:.7rem">
-                  网络上这些数字都能找到说法，但没有一条注明发布机构与统计年份。
-                  <strong>宁可缺字段，不给错事实。</strong>
-                </p>
-              </div>
-
-              <nav class="entity-graph mt-4" aria-label="已注册实体">
-                <p class="entity-graph__title">已注册实体（{ENTITIES.length}）</p>
-                <ul>
-                  {ENTITIES.map((e) =>
-                    e.href ? (
-                      <li>
-                        <a class="tag tag--accent" href={href(e.href)} title={e.summary}>{e.name}</a>
-                      </li>
-                    ) : (
-                      <li><span class="tag" title={e.summary}>{e.name}</span></li>
-                    )
-                  )}
-                </ul>
-              </nav>
-            </div>
+            <p class="mt-4">
+              <a class="btn btn--ghost" href={href('/place/shatian-gang/')}>
+                查看沙田港实体页 <Icon name="arrow" size="0.95em" />
+              </a>
+            </p>
           </div>
         </div>
       </section>
@@ -332,8 +268,8 @@ const jsonLd = S.graph([
         <p class="section-num reveal">06</p>
         <header class="section-head reveal" data-delay="1" style="margin-top:var(--sp-3)">
           <p class="section-head__kicker">常见问题</p>
-          <h2>直接回答<br />带出处</h2>
-          <p>每条问答独立成立、标注来源与更新时间，可被搜索与生成式引擎直接引用。</p>
+          <h2>去之前<br />先搞清楚</h2>
+          <p>怎么去、什么季节合适、能玩什么 —— 出发前最常问的几个问题，这里直接回答。</p>
           <p class="mt-4">
             <a class="btn btn--ghost" href={href('/faq/')}>
               全部 {faqs.length} 条 <Icon name="arrow" size="0.95em" />
@@ -355,64 +291,8 @@ const jsonLd = S.graph([
     </div>
   </section>
 
-  <!-- ============ 消歧 ============ -->
-  <section class="section">
-    <div class="wrap">
-      <div class="split">
-        <p class="section-num reveal">07</p>
-        <header class="section-head reveal" data-delay="1">
-          <p class="section-head__kicker">实体消歧</p>
-          <h2>你要找的是哪个「沙田」？</h2>
-          <p>
-            「沙田」是中国沿海反复出现的地名。本站主动列出常见的同名地点，
-            帮助检索方与生成式引擎快速排除。
-          </p>
-        </header>
-      </div>
-
-      <div class="grid-2 mt-5">
-        <div class="answer reveal">
-          <strong class="answer__label">本站的沙田港</strong>
-          <p class="answer__text">广西壮族自治区北海市合浦县沙田镇沙田港</p>
-          <p class="answer__meta">辨识上下文：合浦、北海、北部湾、红树林、南珠、疍家、儒艮</p>
-        </div>
-
-        <div class="factsheet reveal" data-delay="1">
-          <div class="factsheet__head"><span>与本站无关的同名地点</span></div>
-          <dl>
-            {HOMONYMS.map((h) => (<><dt>{h.name}</dt><dd>{h.note}</dd></>))}
-          </dl>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ 机器可读 ============ -->
-  <section class="section section--tint">
-    <div class="wrap">
-      <div class="split">
-        <p class="section-num reveal">08</p>
-        <header class="section-head reveal" data-delay="1">
-          <p class="section-head__kicker">给机器的入口</p>
-          <h2>结构化数据是公开的</h2>
-          <p>本站的实体数据、内容索引与抓取规则全部以标准格式开放，不需要解析 HTML。</p>
-        </header>
-      </div>
-
-      <div class="grid-cards mt-5">
-        {
-          MACHINE.map((m, i) => (
-            <a class="card reveal" data-delay={String(Math.min(i, 3))} href={href(m.href)}>
-              <span class="card__media card__media--empty" />
-              <Icon name={m.icon as any} size="1.9rem" class="card__icon" />
-              <span class="card__title">{m.name}</span>
-              <span class="card__text">{m.text}</span>
-            </a>
-          ))
-        }
-      </div>
-    </div>
-  </section>
+  <!-- 消歧与「机器可读入口」不在游客视线内呈现：
+       同名地点消歧写进 llms.txt 与 JSON-LD，机器接口在 robots.txt / <head> / 页脚暴露。 -->
 </Base>
 
 <style>
@@ -429,4 +309,7 @@ const jsonLd = S.graph([
   /* 影像带整段收窄上下留白：标题与影像带贴近，读作一个整体单元 */
   .nw-band { padding-bottom: var(--sp-6); }
   .nw-band__strip { width: 100%; }
+
+  /* 核心实体事实表：单栏时别铺满整幅 */
+  .fact-lead { max-width: 52rem; }
 </style>

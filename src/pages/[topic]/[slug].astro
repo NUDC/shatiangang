@@ -13,8 +13,6 @@ import {
   getArticles,
   getTopics,
   resolveRelated,
-  buildCitationIndex,
-  citationKey,
   countWords,
   fmtDate,
   fmtDateCN,
@@ -54,8 +52,6 @@ const topics = await getTopics();
 const topic = topics.find((t) => t.data.slug === d.topic)!;
 const { Content } = await render(article);
 const related = await resolveRelated(article);
-const citations = await buildCitationIndex();
-const citedBy = citations.get(citationKey(article)) ?? 0;
 const wordCount = countWords(article.body ?? '');
 
 const crumbs = [
@@ -125,18 +121,13 @@ const jsonLd = S.graph([
            也让"谁写的、什么时候更新的、来源类型是什么"在滚动中一直可见。 -->
       <aside class="doc-rail">
         <dl class="doc-meta">
-          <dt>作者</dt><dd>{d.author}</dd>
-          <dt>发布</dt><dd>{fmtDate(d.published_at)}</dd>
           <dt>更新</dt><dd>{fmtDate(d.updated_at)}</dd>
           <dt>篇幅</dt><dd>约 {d.reading_time} 分钟</dd>
-          <dt>来源类型</dt><dd>{d.source_platform}</dd>
-          <dt>授权状态</dt><dd>{d.license_status}</dd>
-          {citedBy > 0 && (<><dt>站内引用</dt><dd>{citedBy} 次</dd></>)}
         </dl>
 
         {d.questions.length > 0 && (
           <div class="doc-rail__block">
-            <p class="entity-graph__title">本文正面回答</p>
+            <p class="entity-graph__title">这篇能帮你搞清</p>
             <ul class="doc-qs">
               {d.questions.map((q: string) => (
                 <li><Icon name="check" size="0.8em" /> {q}</li>
@@ -151,13 +142,25 @@ const jsonLd = S.graph([
 
       {ARTICLE_FIGURE[article.id] && <Figure id={ARTICLE_FIGURE[article.id] as any} shape="wide" loading="eager" />}
 
-      {d.unverified.length > 0 && <VerifyNotice items={d.unverified} />}
-
       <div class="prose">
         <Content />
       </div>
 
-      <SourceList citations={d.citations} />
+      {/* 「枯燥但重要」的两块下沉：仍在 HTML 里供检索/AI 读取（也在 llms.txt、
+          JSON-LD 里），但对游客默认折叠，不占主视线。 */}
+      {d.unverified.length > 0 && (
+        <details class="doc-fold">
+          <summary>未核实 / 以现场为准的事项（{d.unverified.length}）</summary>
+          <div class="doc-fold__body"><VerifyNotice items={d.unverified} /></div>
+        </details>
+      )}
+
+      {d.citations && d.citations.length > 0 && (
+        <details class="doc-fold">
+          <summary>资料与来源（{d.citations.length}）</summary>
+          <div class="doc-fold__body"><SourceList citations={d.citations} /></div>
+        </details>
+      )}
 
       <EntityGraph entityIds={d.entity_tags} currentPath={path} />
 
@@ -247,4 +250,22 @@ const jsonLd = S.graph([
   .doc-qs svg { flex: none; color: var(--accent); }
 
   .doc-body { min-width: 0; }
+
+  /* 折叠的「枯燥」块：来源、待核实 —— 默认收起，游客不必看，检索/AI 仍可读 */
+  .doc-fold { border-top: 1px solid var(--line); }
+  .doc-fold > summary {
+    cursor: pointer; list-style: none;
+    padding: var(--sp-3) 0;
+    display: flex; align-items: center; gap: 0.5rem;
+    font-size: var(--step--1); color: var(--fg-subtle);
+    letter-spacing: 0.04em;
+  }
+  .doc-fold > summary::-webkit-details-marker { display: none; }
+  .doc-fold > summary::before {
+    content: '+'; font-family: var(--font-mono);
+    color: var(--accent); font-size: 1.1em; line-height: 1;
+  }
+  .doc-fold[open] > summary::before { content: '−'; }
+  .doc-fold > summary:hover { color: var(--fg-muted); }
+  .doc-fold__body { padding-bottom: var(--sp-4); }
 </style>
