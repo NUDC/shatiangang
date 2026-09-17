@@ -87,4 +87,17 @@ export const NOTES: Note[] = [
     blurb: "依海而生的小镇：买码头海鲜、看日落、赶海挖螺，附自驾/高铁交通攻略。",
     cover: "/media/notes/6819989a000000002200721c.jpg",
   },
+  {
+    url: "https://www.xiaohongshu.com/explore/696114b7000000001a033093?xsec_token=ABjRyHL8bpnS4oLo3dSDMUQrcpqycTIKgCUPb_NlKMagI=&xsec_source=pc_search&source=web_explore_feed",
+    title: "据说这是北海较冷门赶海地",
+    author: "",
+    blurb: "距北海 100 多公里的合浦沙田港，冷门赶海地。",
+    cover: "/media/notes/696114b7000000001a033093.jpg",
+  },
+  {
+    url: "https://www.xiaohongshu.com/explore/689a42ee0000000025012142?xsec_token=AB9WAWmD-wOpTqXPpdPeVrNraQbnPPLmqiZJUSwm5bk4g=&xsec_source=pc_search&source=web_explore_feed",
+    title: "我看到了，沙田坠美的日落🌄",
+    author: "",
+    cover: "/media/notes/689a42ee0000000025012142.jpg",
+  },
 ];
