@@ -73,4 +73,11 @@ export const NOTES: Note[] = [
     blurb: "小众景点 · 沙田港 · 美人鱼小镇。",
     cover: "/media/notes/68ece5b5000000000303b244.jpg",
   },
+  {
+    url: "https://www.xiaohongshu.com/explore/6a9044ee000000002003275d?xsec_token=ABpWN-SOHx-KIPnJjLeMyFWaZ1uCnNDZpGnn9dLTjZUwQ=&xsec_source=pc_search&source=web_explore_feed",
+    title: "沙田港海钓免费钓点开车直发",
+    author: "",
+    blurb: "石斑、滑仔、泥猛、金鼓鱼，水深约 13 米，适合休闲垂钓。",
+    cover: "/media/notes/6a9044ee000000002003275d.jpg",
+  },
 ];
