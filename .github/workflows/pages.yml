@@ -42,10 +42,6 @@ jobs:
           # 仓库名段大小写保留。canonical / sitemap / JSON-LD @id 全从这里派生。
           SITE_URL: https://nudc.github.io
           BASE_PATH: /shatiangang/
-          # 高德明文安全密钥。可用仓库 Secret 覆盖 site.ts 的默认值；
-          # 但明文模式下它终究出现在公开页面里，真正的防护是高德控制台的
-          # **域名白名单**（把 nudc.github.io 加进去）。
-          PUBLIC_AMAP_SECURITY_CODE: ${{ secrets.AMAP_SECURITY_CODE }}
         run: npm run build
 
       - name: GEO 自检

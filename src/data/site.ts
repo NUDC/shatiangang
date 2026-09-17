@@ -15,18 +15,11 @@
  * 安全密钥见下方 securityCode 字段。
  */
 export const AMAP = {
-  key: (import.meta.env.PUBLIC_AMAP_KEY as string) || 'e004b2482662e0bfce518e8e36a1c3b9',
-  /**
-   * JS API 安全密钥（明文模式）。
-   *
-   * **它会出现在前端 JS 与公开仓库里** —— 高德把这叫「不建议生产使用」的模式，
-   * 但站点托管在 GitHub Pages（纯静态、无服务端），没有地方藏密钥，这是唯一可行的路。
-   * 靠**域名白名单**兜底：在高德控制台给上面这个 key 绑定 nudc.github.io，
-   * 密钥被抄走也只能从白名单域名调用。上线前务必配置。
-   */
-  securityCode:
-    (import.meta.env.PUBLIC_AMAP_SECURITY_CODE as string) ||
-    '671dcc72c12007ecf5b1b9aa04783e8d',
+  // 纯静态站，直接硬编码。key 与安全密钥都会出现在前端 JS 里 ——
+  // 这是 GitHub Pages（无服务端）的固有情形，安全性靠高德控制台的域名白名单
+  // （给 key 绑定 nudc.github.io），不靠保密。
+  key: 'e004b2482662e0bfce518e8e36a1c3b9',
+  securityCode: '671dcc72c12007ecf5b1b9aa04783e8d',
 } as const;
 
 export const SITE = {
