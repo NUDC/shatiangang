@@ -9,31 +9,45 @@ import { NOTES } from '@/data/notes';
 import { SITE } from '@/data/site';
 import { MEDIA, cardSrc } from '@/data/media';
 import { href } from '@/lib/url';
-import { getTopics, getArticles, getPlaces, getFaqs, fmtDate, type Fact, getMapCenter } from '@/lib/content';
+import { getPlaces, getFaqs, type Fact, getMapCenter } from '@/lib/content';
 import * as S from '@/lib/schema';
 
-const topics = await getTopics();
-
-/** 主题 → 物种/物产示意卡图。没有对应图的主题保持空占位（塌陷成细线）。 */
-const TOPIC_IMG: Record<string, keyof typeof MEDIA> = {
-  haisi: 'hanpottery',
-  island: 'mangrove',
-  danjia: 'sipunculus',
-  pearl: 'pearls',
-  travel: 'beihai',
-  place: 'mudflat',
-};
-const articles = await getArticles();
 const places = await getPlaces();
 const faqs = await getFaqs();
 const mapCenter = await getMapCenter();
 
 const primary = places.find((p) => p.data.is_primary);
 const topFaqs = faqs.slice(0, 5);
-const latest = articles.slice(0, 3);
 
 const heroAnswer =
   '沙田港位于广西壮族自治区北海市合浦县沙田镇，地处北部湾东北端、沙田半岛一带，是一座国家一级渔港。半岛东侧为英罗港、西侧为丹兜海，两侧均属广西山口红树林生态国家级自然保护区；沿岸海域另设有中国唯一的合浦儒艮国家级自然保护区。';
+
+/** 有什么 —— 看点，链到已有的深入页 */
+const HIGHLIGHTS: { icon: string; title: string; text: string; href: string; accent: string; img?: keyof typeof MEDIA }[] = [
+  { icon: 'tree', title: '山口红树林 · 英罗港', text: '国家级保护区，成片红海榄，退潮观鸟、看滩涂。', href: '/island/shankou-hongshulin/', accent: 'tide', img: 'mangrove' },
+  { icon: 'waves', title: '合浦儒艮「美人鱼」海域', text: '中国唯一的儒艮国家级保护区，界线西至沙田镇海域。', href: '/island/hepu-rugen/', accent: 'sea', img: 'dugong' },
+  { icon: 'anchor', title: '疍家渔港与赶海滩涂', text: '国家一级渔港，疍家赶海传统，退潮下滩挖螺挖沙虫。', href: '/danjia/', accent: 'sea', img: 'mudflat' },
+  { icon: 'pearl', title: '合浦南珠', text: '两千年采珠史，「珠还合浦」典故就出在这片海。', href: '/pearl/', accent: 'pearl', img: 'pearls' },
+  { icon: 'lighthouse', title: '海丝古港 · 合浦汉墓', text: '汉代海上丝绸之路始发港之一，出土大量海外舶来品。', href: '/haisi/', accent: 'sail', img: 'hanpottery' },
+  { icon: 'boat', title: '美人鱼小镇 · 古郡', text: '镇上以「美人鱼」（儒艮）为主题的文旅小镇，可打卡可住宿。', href: '/travel/how-to-reach/', accent: 'coral' },
+];
+
+/** 怎么玩 —— 玩法，多来自旅行者笔记与公开资料 */
+const ACTIVITIES: { icon: string; title: string; text: string }[] = [
+  { icon: 'clock', title: '看日落', text: '码头和海边是拍日落的好位置 —— 笔记墙里最多的就是沙田的落日。' },
+  { icon: 'waves', title: '赶海挖螺', text: '退潮后下滩，挖螺、挖沙虫、捉螃蟹。出发前先看当日潮汐。' },
+  { icon: 'anchor', title: '海钓', text: '有免费钓点，石斑、泥猛、金鼓鱼都能钓到。' },
+  { icon: 'tree', title: '海边露营', text: '沙滩边可扎营过夜，看星星、等第二天的日出。' },
+  { icon: 'boat', title: '坐渔船出海', text: '能跟着渔民坐船去断洲沙，感受最原汁原味的赶海。' },
+  { icon: 'compass', title: '逛红树林 · 观鸟', text: '英罗港、丹兜海两片红树林，退潮时观鸟、看成片红海榄。' },
+];
+
+/** 住哪里 —— 住宿去处 */
+const STAYS: { title: string; text: string }[] = [
+  { title: '美人鱼小镇', text: '「美人鱼」（儒艮）主题文旅小镇，可打卡、可住宿。' },
+  { title: '美人鱼古郡', text: '另一处「美人鱼」主题文旅项目，同样提供住宿。' },
+  { title: '镇中心酒店 · 旅馆', text: '数量不多，胜在靠近码头 —— 方便早起买刚靠港的海鲜、赶潮下滩。' },
+];
 
 const jsonLd = S.graph([
   S.publisher(),
@@ -69,24 +83,24 @@ const jsonLd = S.graph([
       </h1>
 
       <p class="hero__lede reveal" data-delay="2">
-        北部湾东北端的国家一级渔港。两个国家级自然保护区在此交汇，
-        两千年海丝航道从这片海岸出发 —— 而它至今没有一份像样的资料。
+        北部湾东北端的国家一级渔港，红树林、儒艮、南珠环绕。
+        看日落、赶海、出海、露营 —— 一个还没被游客挤满的小众海边。
       </p>
 
       <div class="hero__foot reveal" data-delay="3">
-        <a class="btn" href={href('/place/shatian-gang/')}>
-          查看沙田港实体页 <Icon name="arrow" size="0.95em" />
+        <a class="btn" href="#what">
+          有什么可玩 <Icon name="arrow" size="0.95em" />
         </a>
-        <a class="btn btn--ghost" href={href('/faq/')}>常见问题</a>
+        <a class="btn btn--ghost" href="#where">在哪里 · 怎么去</a>
         <span class="hero__note">
-          <Icon name="check" size="0.85em" />
-          每条事实标注来源，未核实的显式标记
+          <Icon name="map" size="0.85em" />
+          广西 · 北海 · 合浦县沙田镇
         </span>
       </div>
     </div>
   </section>
 
-  <!-- ============ 一句话认识沙田港 ============ -->
+  <!-- ============ 一句话认识 ============ -->
   <section class="section">
     <div class="wrap split">
       <p class="section-num reveal">01</p>
@@ -96,96 +110,25 @@ const jsonLd = S.graph([
     </div>
   </section>
 
-  <!-- ============ 笔记墙影像带 ============ -->
-  <section class="section section--tint nw-band">
-    <div class="wrap">
-      <div class="split">
-        <p class="section-num reveal">02</p>
-        <header class="section-head reveal" data-delay="1">
-          <p class="section-head__kicker">站外内容 · 小红书</p>
-          <h2>旅行者镜头里的沙田港</h2>
-          <p>
-            全站唯一的真实影像 —— 来自小红书旅行者拍下的日落、赶海、渡口与露营。
-            点击封面跳转小红书看原文。
-          </p>
-          <p class="mt-4">
-            <a class="btn btn--ghost" href={href('/wall/')}>
-              进入笔记墙 · {NOTES.length} 条 <Icon name="arrow" size="0.95em" />
-            </a>
-          </p>
-        </header>
-      </div>
-    </div>
-    <div class="nw-band__strip reveal mt-5">
-      <NoteMarquee />
-    </div>
-  </section>
-
-  <!-- ============ 六大主题 ============ -->
-  <section class="section">
-    <div class="wrap">
-      <div class="split">
-        <p class="section-num reveal">03</p>
-        <header class="section-head reveal" data-delay="1">
-          <p class="section-head__kicker">内容架构</p>
-          <h2>六个一级主题</h2>
-          <p>
-            围绕「沙田港」这一核心实体向下展开。每个主题下挂专题正文，
-            每个可识别地点单独建立实体页 —— 这是被检索与被引用的最小单位。
-          </p>
-        </header>
-      </div>
-
-      <div class="grid-cards mt-5">
-        {
-          topics.map((t, i) => (
-            <a
-              class="card reveal"
-              data-delay={String(Math.min(i % 3, 3))}
-              href={href(`/${t.data.slug}/`)}
-              data-accent={t.data.accent}
-            >
-              {TOPIC_IMG[t.data.slug] ? (
-                <span class="card__media">
-                  <img
-                    src={href(cardSrc(TOPIC_IMG[t.data.slug]))}
-                    alt={MEDIA[TOPIC_IMG[t.data.slug]].alt}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </span>
-              ) : (
-                <span class="card__media card__media--empty" />
-              )}
-              <Icon name={t.data.icon as any} size="1.9rem" class="card__icon" />
-              <span class="card__title">{t.data.title}</span>
-              <span class="card__text">{t.data.tagline}</span>
-              <span class="card__meta">
-                <span>
-                  {t.data.slug === 'place'
-                    ? `${places.length} 个实体页`
-                    : `${articles.filter((a) => a.data.topic === t.data.slug).length} 篇专题`}
-                </span>
-                <span>→</span>
-              </span>
-            </a>
-          ))
-        }
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ 核心实体 ============ -->
+  <!-- ============ 在哪里 ============ -->
   {
     primary && (
-      <section class="section section--tint">
+      <section id="where" class="section section--tint">
         <div class="wrap">
           <div class="split">
-            <p class="section-num reveal">04</p>
+            <p class="section-num reveal">02</p>
             <header class="section-head reveal" data-delay="1">
-              <p class="section-head__kicker">核心实体</p>
-              <h2>{primary.data.title}</h2>
-              <p>{primary.data.description}</p>
+              <p class="section-head__kicker"><Icon name="map" size="0.9em" /> 在哪里</p>
+              <h2>广西北海合浦县沙田镇</h2>
+              <p>
+                北部湾东北端、沙田半岛一带。距合浦县城约 92 公里，
+                通常经北海或合浦县城中转 —— 不是市区近郊，建议自驾或包车，单程留足半天。
+              </p>
+              <p class="mt-4">
+                <a class="btn btn--ghost" href={href('/travel/how-to-reach/')}>
+                  怎么去沙田港 <Icon name="arrow" size="0.95em" />
+                </a>
+              </p>
             </header>
           </div>
 
@@ -197,9 +140,7 @@ const jsonLd = S.graph([
 
           <div class="mt-5 reveal">
             <div class="factsheet fact-lead">
-              <div class="factsheet__head">
-                <span>关于沙田港</span>
-              </div>
+              <div class="factsheet__head"><span>基本信息</span></div>
               <dl>
                 {primary.data.facts
                   .filter((f: Fact) => f.verified !== false)
@@ -212,56 +153,122 @@ const jsonLd = S.graph([
                   ))}
               </dl>
             </div>
-            <p class="mt-4">
-              <a class="btn btn--ghost" href={href('/place/shatian-gang/')}>
-                查看沙田港实体页 <Icon name="arrow" size="0.95em" />
-              </a>
-            </p>
           </div>
         </div>
       </section>
     )
   }
 
-  <!-- ============ 最新专题 ============ -->
-  <section class="section">
+  <!-- ============ 有什么 ============ -->
+  <section id="what" class="section">
     <div class="wrap">
       <div class="split">
-        <p class="section-num reveal">05</p>
+        <p class="section-num reveal">03</p>
         <header class="section-head reveal" data-delay="1">
-          <p class="section-head__kicker">专题正文</p>
-          <h2>最近更新</h2>
+          <p class="section-head__kicker"><Icon name="compass" size="0.9em" /> 有什么</p>
+          <h2>看点</h2>
+          <p>红树林、儒艮、南珠、海丝古港，还有一片小众海岸 —— 点开看细的。</p>
         </header>
       </div>
 
       <div class="grid-cards mt-5">
         {
-          latest.map((a, i) => {
-            const topic = topics.find((t) => t.data.slug === a.data.topic);
-            return (
-              <a
-                class="card reveal"
-                data-delay={String(Math.min(i, 3))}
-                href={href(`/${a.data.topic}/${a.id}/`)}
-                data-accent={topic?.data.accent ?? 'sea'}
-              >
-                <span class="card__media card__media--empty" />
-                <span class="tag tag--accent card__kicker">{topic?.data.title}</span>
-                <span class="card__title">{a.data.title}</span>
-                <span class="card__text">{a.data.description}</span>
-                <span class="card__meta">
-                  <span>约 {a.data.reading_time} 分钟</span>
-                  <span>更新于 {fmtDate(a.data.updated_at)}</span>
+          HIGHLIGHTS.map((h, i) => (
+            <a
+              class="card reveal"
+              data-delay={String(Math.min(i % 3, 3))}
+              href={href(h.href)}
+              data-accent={h.accent}
+            >
+              {h.img ? (
+                <span class="card__media">
+                  <img src={href(cardSrc(h.img))} alt={MEDIA[h.img].alt} loading="lazy" decoding="async" />
                 </span>
-              </a>
-            );
-          })
+              ) : (
+                <span class="card__media card__media--empty" />
+              )}
+              <Icon name={h.icon as any} size="1.9rem" class="card__icon" />
+              <span class="card__title">{h.title}</span>
+              <span class="card__text">{h.text}</span>
+              <span class="card__meta"><span>了解</span><span>→</span></span>
+            </a>
+          ))
         }
       </div>
     </div>
   </section>
 
-  <!-- ============ FAQ ============ -->
+  <!-- ============ 怎么玩（含真实影像带） ============ -->
+  <section id="play" class="section section--tint nw-band">
+    <div class="wrap">
+      <div class="split">
+        <p class="section-num reveal">04</p>
+        <header class="section-head reveal" data-delay="1">
+          <p class="section-head__kicker"><Icon name="waves" size="0.9em" /> 怎么玩</p>
+          <h2>玩法</h2>
+          <p>看日落、赶海、海钓、露营、坐渔船出海 —— 玩法多来自旅行者的实地笔记，具体以现场为准。</p>
+        </header>
+      </div>
+
+      <div class="grid-cards mt-5">
+        {
+          ACTIVITIES.map((a, i) => (
+            <div class="card play-card reveal" data-delay={String(Math.min(i % 3, 3))}>
+              <Icon name={a.icon as any} size="1.7rem" class="card__icon" />
+              <span class="card__title">{a.title}</span>
+              <span class="card__text">{a.text}</span>
+            </div>
+          ))
+        }
+      </div>
+
+      <div class="play-strip mt-5 reveal">
+        <div class="play-strip__head">
+          <p class="entity-graph__title">旅行者镜头里的沙田港 · {NOTES.length} 条笔记</p>
+          <a class="play-strip__more" href={href('/wall/')}>进入笔记墙 <Icon name="arrow" size="0.85em" /></a>
+        </div>
+      </div>
+    </div>
+    <div class="nw-band__strip reveal">
+      <NoteMarquee />
+    </div>
+  </section>
+
+  <!-- ============ 住哪里 ============ -->
+  <section id="stay" class="section">
+    <div class="wrap">
+      <div class="split">
+        <p class="section-num reveal">05</p>
+        <header class="section-head reveal" data-delay="1">
+          <p class="section-head__kicker"><Icon name="anchor" size="0.9em" /> 住哪里</p>
+          <h2>住宿</h2>
+          <p>
+            住宿集中在镇中心和两处「美人鱼」（儒艮）主题文旅项目。价格与房态本站未实地核实，
+            出行前请自行确认。
+          </p>
+        </header>
+      </div>
+
+      <div class="grid-cards mt-5">
+        {
+          STAYS.map((s, i) => (
+            <div class="card play-card reveal" data-delay={String(Math.min(i, 3))}>
+              <Icon name="boat" size="1.7rem" class="card__icon" />
+              <span class="card__title">{s.title}</span>
+              <span class="card__text">{s.text}</span>
+            </div>
+          ))
+        }
+      </div>
+      <p class="mt-4">
+        <a class="btn btn--ghost" href={href('/travel/how-to-reach/')}>
+          住宿与出行细节 <Icon name="arrow" size="0.95em" />
+        </a>
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ 常见问题 ============ -->
   <section class="section section--tint">
     <div class="wrap split">
       <div>
@@ -312,4 +319,30 @@ const jsonLd = S.graph([
 
   /* 核心实体事实表：单栏时别铺满整幅 */
   .fact-lead { max-width: 52rem; }
+
+  /* 章节 kicker 里的小图标对齐 */
+  .section-head__kicker :global(svg) { flex: none; }
+
+  /* 玩法 / 住宿卡片：非链接，静态展示，无图位，图标起头 */
+  .play-card {
+    padding: var(--sp-4);
+    background: var(--bg-raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    gap: 0.5rem;
+  }
+  .play-card .card__icon { margin-bottom: var(--sp-2); }
+  .play-card .card__title { font-size: var(--step-1); }
+
+  /* 怎么玩 → 笔记墙影像带的小标头 */
+  .play-strip__head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: var(--sp-3); flex-wrap: wrap;
+    padding-bottom: var(--sp-3); border-bottom: 1px solid var(--line);
+  }
+  .play-strip__more {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    font-size: var(--step--1); color: var(--accent); text-decoration: none; white-space: nowrap;
+  }
+  .play-strip__more:hover { text-decoration: underline; text-underline-offset: 0.2em; }
 </style>

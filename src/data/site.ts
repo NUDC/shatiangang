@@ -185,14 +185,14 @@ export function resolveEntities(ids: string[] = []): Entity[] {
  * 导航
  * ------------------------------------------------------------------ */
 
+/** 导航按游客动线组织：在哪里 / 有什么 / 怎么玩 / 住哪里 —— 前四项是首页锚点，
+    深入的主题页（海丝/海岛/疍家/南珠/出行/地点）从「有什么」的看点卡进入。 */
 export const NAV = [
-  { label: '海丝与港口史', href: '/haisi/' },
-  { label: '海岛与自然', href: '/island/' },
-  { label: '疍家与渔业', href: '/danjia/' },
-  { label: '南珠文化', href: '/pearl/' },
-  { label: '实用出行', href: '/travel/' },
+  { label: '在哪里', href: '/#where' },
+  { label: '有什么', href: '/#what' },
+  { label: '怎么玩', href: '/#play' },
+  { label: '住哪里', href: '/#stay' },
   { label: '笔记墙', href: '/wall/' },
-  { label: '地点实体', href: '/place/' },
   { label: '常见问题', href: '/faq/' },
 ] as const;
 
