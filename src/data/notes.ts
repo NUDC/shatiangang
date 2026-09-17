@@ -59,4 +59,18 @@ export const NOTES: Note[] = [
     blurb: "回了一趟老家，看了一场沙田港的落日。",
     cover: "/media/notes/69f61b8e000000001b023caf.jpg",
   },
+  {
+    url: "https://www.xiaohongshu.com/explore/6994f55b000000001d0248ec?xsec_token=ABLVSXH8Oy3N6sXfV5q8stkEtrTYkOj2P3e8fqyEN5XEg=&xsec_source=pc_search&source=web_explore_feed",
+    title: "广西不知名小岛",
+    author: "",
+    blurb: "坐标北海合浦沙田港。",
+    cover: "/media/notes/6994f55b000000001d0248ec.jpg",
+  },
+  {
+    url: "https://www.xiaohongshu.com/explore/68ece5b5000000000303b244?xsec_token=ABbQ8QW-UQbkI894Sh4ALQoOb5NIhyYL9818TD1_o8gp0=&xsec_source=pc_search&source=web_explore_feed",
+    title: "这大概就是我向往的自由生活吧～",
+    author: "",
+    blurb: "小众景点 · 沙田港 · 美人鱼小镇。",
+    cover: "/media/notes/68ece5b5000000000303b244.jpg",
+  },
 ];
