@@ -38,9 +38,11 @@ export interface Note {
 export const NOTES: Note[] = [
   {
     url: 'https://www.xiaohongshu.com/explore/670291d6000000002c02eab3?xsec_token=ABokVB5kPpPoRLLgWk6Irmi1p6YEBe7x2Xbq7K9HX3rsU=&xsec_source=pc_search&source=web_explore_feed',
-    // ⚠️ 待站长补全：本站读不到小红书笔记标题（需登录），请手动填写真实标题与作者
-    title: '沙田港日落与赶海（待补全标题）',
+    // 标题/封面取自小红书为分享发布的 OG 预览（scripts/xhs-preview.mjs）——
+    // 即微信展开链接时看到的那份，非抓取正文。作者昵称 OG 里没有，待站长补全。
+    title: '合浦沙田港 日落🌅',
     author: '',
-    blurb: '',
+    blurb: '看一场日落，一个人也很浪漫。',
+    cover: '/media/notes/670291d6000000002c02eab3.jpg',
   },
 ];
