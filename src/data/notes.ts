@@ -37,12 +37,26 @@ export interface Note {
 
 export const NOTES: Note[] = [
   {
-    url: 'https://www.xiaohongshu.com/explore/670291d6000000002c02eab3?xsec_token=ABokVB5kPpPoRLLgWk6Irmi1p6YEBe7x2Xbq7K9HX3rsU=&xsec_source=pc_search&source=web_explore_feed',
+    url: "https://www.xiaohongshu.com/explore/670291d6000000002c02eab3?xsec_token=ABokVB5kPpPoRLLgWk6Irmi1p6YEBe7x2Xbq7K9HX3rsU=&xsec_source=pc_search&source=web_explore_feed",
     // 标题/封面取自小红书为分享发布的 OG 预览（scripts/xhs-preview.mjs）——
     // 即微信展开链接时看到的那份，非抓取正文。作者昵称 OG 里没有，待站长补全。
-    title: '合浦沙田港 日落🌅',
-    author: '',
-    blurb: '看一场日落，一个人也很浪漫。',
-    cover: '/media/notes/670291d6000000002c02eab3.jpg',
+    title: "合浦沙田港 日落🌅",
+    author: "",
+    blurb: "看一场日落，一个人也很浪漫。",
+    cover: "/media/notes/670291d6000000002c02eab3.jpg",
+  },
+  {
+    url: "https://www.xiaohongshu.com/explore/69970d5f000000002800aee1?xsec_token=ABtlSVhAlL2hvek2Ppn0XUIa_rLlaJuyKHFoqWS9FI88s=&xsec_source=pc_search&source=web_explore_feed",
+    title: "北海小众赶海渡口｜沙田港",
+    author: "",
+    blurb: "北海合浦沙田港渡口",
+    cover: "/media/notes/69970d5f000000002800aee1.jpg",
+  },
+  {
+    url: "https://www.xiaohongshu.com/explore/69f61b8e000000001b023caf?xsec_token=AB-cskdwIfFSrYEswK5k-CFPiM_KgCN-z3LBKp491OB_E=&xsec_source=pc_search&source=web_explore_feed",
+    title: "北海沙田港地落日",
+    author: "",
+    blurb: "回了一趟老家，看了一场沙田港的落日。",
+    cover: "/media/notes/69f61b8e000000001b023caf.jpg",
   },
 ];
