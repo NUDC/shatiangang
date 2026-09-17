@@ -32,15 +32,20 @@ const HIGHLIGHTS: { icon: string; title: string; text: string; href: string; acc
   { icon: 'boat', title: '美人鱼小镇 · 古郡', text: '镇上以「美人鱼」（儒艮）为主题的文旅小镇，可打卡可住宿。', href: '/travel/how-to-reach/', accent: 'coral' },
 ];
 
-/** 怎么玩 —— 玩法，多来自旅行者笔记与公开资料 */
-const ACTIVITIES: { icon: string; title: string; text: string }[] = [
-  { icon: 'clock', title: '看日落', text: '码头和海边是拍日落的好位置 —— 笔记墙里最多的就是沙田的落日。' },
-  { icon: 'waves', title: '赶海挖螺', text: '退潮后下滩，挖螺、挖沙虫、捉螃蟹。出发前先看当日潮汐。' },
-  { icon: 'anchor', title: '海钓', text: '有免费钓点，石斑、泥猛、金鼓鱼都能钓到。' },
-  { icon: 'tree', title: '海边露营', text: '沙滩边可扎营过夜，看星星、等第二天的日出。' },
-  { icon: 'boat', title: '坐渔船出海', text: '能跟着渔民坐船去断洲沙，感受最原汁原味的赶海。' },
-  { icon: 'compass', title: '逛红树林 · 观鸟', text: '英罗港、丹兜海两片红树林，退潮时观鸟、看成片红海榄。' },
+/** 怎么玩 —— 玩法。每个配一张正好拍了这玩法的小红书笔记封面，卡片链回原笔记。 */
+const ACTIVITIES: { icon: string; title: string; text: string; note: string }[] = [
+  { icon: 'clock', title: '看日落', text: '码头和海边是拍日落的好位置 —— 笔记墙里最多的就是沙田的落日。', note: '670291d6' },
+  { icon: 'waves', title: '赶海挖螺', text: '退潮后下滩，挖螺、挖沙虫、捉螃蟹。出发前先看当日潮汐。', note: '696114b7' },
+  { icon: 'anchor', title: '海钓', text: '有免费钓点，石斑、泥猛、金鼓鱼都能钓到。', note: '6a9044ee' },
+  { icon: 'tree', title: '海边露营', text: '沙滩边可扎营过夜，看星星、等第二天的日出。', note: '69f9fd7f' },
+  { icon: 'boat', title: '坐渔船出海', text: '能跟着渔民坐船去断洲沙，感受最原汁原味的赶海。', note: '69970d5f' },
+  { icon: 'compass', title: '逛海岛 · 看海岸', text: '沙田半岛伸入北部湾，小岛、滩涂、红树林连成一片海岸线。', note: '6994f55b' },
 ];
+
+/** 玩法卡的封面/链接：从 NOTES 里按笔记 id 取（cover 路径含该 id） */
+const noteById = new Map(
+  NOTES.map((n) => [n.cover?.match(/notes\/([0-9a-f]+)/)?.[1] ?? '', n] as const)
+);
 
 /** 住哪里 —— 住宿去处 */
 const STAYS: { title: string; text: string }[] = [
@@ -212,19 +217,36 @@ const jsonLd = S.graph([
 
       <div class="grid-cards mt-5">
         {
-          ACTIVITIES.map((a, i) => (
-            <div class="card play-card reveal" data-delay={String(Math.min(i % 3, 3))}>
-              <Icon name={a.icon as any} size="1.7rem" class="card__icon" />
-              <span class="card__title">{a.title}</span>
-              <span class="card__text">{a.text}</span>
-            </div>
-          ))
+          ACTIVITIES.map((a, i) => {
+            const n = noteById.get(a.note);
+            return (
+              <a
+                class="card reveal"
+                data-delay={String(Math.min(i % 3, 3))}
+                href={n?.url ?? href('/wall/')}
+                rel="nofollow noopener ugc"
+                target="_blank"
+              >
+                {n?.cover ? (
+                  <span class="card__media play-media">
+                    <img src={href(n.cover)} alt={`沙田港${a.title}`} loading="lazy" decoding="async" />
+                    <Icon name={a.icon as any} size="1.2rem" class="play-media__icon" />
+                  </span>
+                ) : (
+                  <span class="card__media card__media--empty" />
+                )}
+                <span class="card__title">{a.title}</span>
+                <span class="card__text">{a.text}</span>
+                <span class="card__meta"><span class="tag tag--accent">小红书实拍</span><span>→</span></span>
+              </a>
+            );
+          })
         }
       </div>
 
       <div class="play-strip mt-5 reveal">
         <div class="play-strip__head">
-          <p class="entity-graph__title">旅行者镜头里的沙田港 · {NOTES.length} 条笔记</p>
+          <p class="entity-graph__title">还有更多真实照片 · {NOTES.length} 条笔记</p>
           <a class="play-strip__more" href={href('/wall/')}>进入笔记墙 <Icon name="arrow" size="0.85em" /></a>
         </div>
       </div>
@@ -323,7 +345,16 @@ const jsonLd = S.graph([
   /* 章节 kicker 里的小图标对齐 */
   .section-head__kicker :global(svg) { flex: none; }
 
-  /* 玩法 / 住宿卡片：非链接，静态展示，无图位，图标起头 */
+  /* 玩法卡封面上的玩法图标角标 */
+  .play-media { position: relative; }
+  .play-media__icon {
+    position: absolute; top: 0.55rem; left: 0.55rem; z-index: 1;
+    box-sizing: content-box; width: 1.2rem; height: 1.2rem; padding: 0.4rem;
+    color: #fff; background: rgb(8 12 16 / 0.42); border-radius: 999px;
+    backdrop-filter: blur(4px);
+  }
+
+  /* 住宿卡片：非链接，静态展示，无图位，图标起头 */
   .play-card {
     padding: var(--sp-4);
     background: var(--bg-raised);
