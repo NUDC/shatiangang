@@ -100,4 +100,18 @@ export const NOTES: Note[] = [
     author: "",
     cover: "/media/notes/689a42ee0000000025012142.jpg",
   },
+  {
+    url: "https://www.xiaohongshu.com/explore/6a0c62b6000000003700d8b4?xsec_token=ABFbq6I71RDT-67PHsMLnopksXWw0vo5AbMZT9YVw0QDM=&xsec_source=pc_search&source=web_explore_feed",
+    title: "广西合浦沙田打卡美人鱼小镇",
+    author: "",
+    blurb: "没想到家门口就有打卡的地方 · 沙田美人鱼小镇。",
+    cover: "/media/notes/6a0c62b6000000003700d8b4.jpg",
+  },
+  {
+    url: "https://www.xiaohongshu.com/explore/67ad88a9000000001701fff8?xsec_token=ABgIRFUMB-_0_8_97wpbQNhnnVEJdP9ZZZENQdzr27jfc=&xsec_source=pc_search&source=web_explore_feed",
+    title: "合浦沙田镇沙田港",
+    author: "",
+    blurb: "航拍 · 赶海。",
+    cover: "/media/notes/67ad88a9000000001701fff8.jpg",
+  },
 ];
