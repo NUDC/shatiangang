@@ -80,4 +80,11 @@ export const NOTES: Note[] = [
     blurb: "石斑、滑仔、泥猛、金鼓鱼，水深约 13 米，适合休闲垂钓。",
     cover: "/media/notes/6a9044ee000000002003275d.jpg",
   },
+  {
+    url: "https://www.xiaohongshu.com/explore/6819989a000000002200721c?xsec_token=ABfoMjcBHGsxVZeA_8eUBJKiwgJtePYFw74qju5tIinUc=&xsec_source=pc_search&source=web_explore_feed",
+    title: "宣传下广西的一个海边小镇（沙田镇）",
+    author: "",
+    blurb: "依海而生的小镇：买码头海鲜、看日落、赶海挖螺，附自驾/高铁交通攻略。",
+    cover: "/media/notes/6819989a000000002200721c.jpg",
+  },
 ];
