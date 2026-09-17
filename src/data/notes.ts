@@ -128,4 +128,11 @@ export const NOTES: Note[] = [
     blurb: "露营/停车/潮汐实用攻略：帐篷含烧烤桌 50、过夜 98，沙滩边有水管冲洗。",
     cover: "/media/notes/69f9fd7f000000003601fc92.jpg",
   },
+  {
+    url: "https://www.xiaohongshu.com/explore/68a11629000000001b02255e?xsec_token=ABUjp3wps7UHG767Zm8lSzSGiqODG5RXlXWszrzOfJ5uw=&xsec_source=pc_search&source=web_explore_feed",
+    title: "宝藏冷门赶海地｜南宁出发，北海沙田小镇打卡",
+    author: "",
+    blurb: "南宁自驾约 2.5 小时到海战村，含住宿/美食/赶海攻略。",
+    cover: "/media/notes/68a11629000000001b02255e.jpg",
+  },
 ];
